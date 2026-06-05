@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Reservation System</title>
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* --- RESET & BASIC STYLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: #f0f2f5; color: #333; line-height: 1.5; }
+        
+        /* --- HEADER --- */
+        .main-header { background: #003580; color: white; padding: 20px; text-align: center; }
+        .main-header h1 { font-size: 2rem; margin-bottom: 5px; }
+        .main-header p { opacity: 0.9; }
+
+        /* --- SEARCH SECTION --- */
+        .search-container { max-width: 900px; margin: 20px auto 20px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; z-index: 10; }
+        .search-grid { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end; }
+        .search-group { display: flex; flex-direction: column; }
+        .search-group label { font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: #333; }
+        .search-group input { padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        .search-group input:focus { outline: none; border-color: #0071c2; box-shadow: 0 0 0 2px rgba(0,113,194,0.2); }
+        
+        .search-btn { background: #0071c2; color: white; border: none; padding: 12px 24px; border-radius: 4px; font-size: 1rem; font-weight: 700; cursor: pointer; height: 46px; transition: background 0.2s; }
+        .search-btn:hover { background: #005999; }
+
+        /* --- RESULTS SECTION --- */
+        .results-section { max-width: 900px; margin: 0 auto 40px; padding: 0 20px; display: none; }
+        .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .results-count { font-size: 1.2rem; font-weight: 700; color: #003580; }
+        .filter-btn { padding: 6px 12px; border: 1px solid #ccc; background: white; border-radius: 20px; cursor: pointer; font-size: 0.85rem; }
+        .filter-btn.active { background: #003580; color: white; border-color: #003580; }
+
+        /* --- HOTEL CARD --- */
+        .hotel-card { background: white; border-radius: 8px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; transition: transform 0.2s; }
+        .hotel-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        
+        .hotel-image { width: 300px; height: 200px; object-fit: cover; flex-shrink: 0; }
+        .hotel-content { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+        
+        .hotel-name { font-size: 1.3rem; color: #0071c2; font-weight: 700; margin-bottom: 5px; cursor: pointer; }
+        .hotel-rating-badge { background: #003580; color: white; padding: 4px 6px; border-radius: 4px 4px 4px 0; font-weight: 700; font-size: 0.9rem; display: inline-block; margin-bottom: 10px; }
+        .hotel-address { color: #666; font-size: 0.9rem; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+        
+        .hotel-amenities { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .amenity { display: flex; align-items: center; gap: 5px; font-size: 0.8rem; color: #008009; font-weight: 600; background: #e5f6e6; padding: 4px 8px; border-radius: 4px; }
+        
+        .hotel-footer { margin-top: auto; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 15px; }
+        .hotel-phone { color: #666; font-size: 0.9rem; }
+        
+        .book-btn { background: #0071c2; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 700; cursor: pointer; }
+        .book-btn:hover { background: #005999; }
+
+        /* --- MODAL --- */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .modal { background: white; border-radius: 8px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { background: #003580; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { margin: 0; }
+        .close-modal { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        .modal-body { padding: 25px; }
+        
+        .selected-hotel-info { background: #f0f8ff; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #0071c2; }
+        .selected-hotel-info h3 { color: #003580; margin-bottom: 5px; }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-weight: 600; margin-bottom: 5px; color: #555; font-size: 0.9rem; }
+        .form-group input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+        
+        .modal-footer { padding: 15px 25px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; background: #f8f9fa; }
+        .cancel-btn { background: white; border: 1px solid #ccc; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .confirm-btn { background: #0071c2; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+
+        /* --- STATUS & UTILS --- */
+        .status { text-align: center; padding: 15px; color: #666; }
+        .no-results { text-align: center; padding: 40px; color: #666; }
+        .stars { color: #febb02; letter-spacing: 1px; }
+        
+        @media (max-width: 768px) {
+            .search-grid { grid-template-columns: 1fr; }
+            .hotel-card { flex-direction: column; }
+            .hotel-image { width: 100%; height: 200px; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+    <script src="hotel_images.js"></script>
+</head>
+<body>
+
+    <header class="main-header">
+        <h1>Hotel Reservation System</h1>
+        <p>Find and book your perfect stay</p>
+    </header>
+
+    <!-- SEARCH BAR -->
+    <div class="search-container">
+        <div class="search-grid">
+            <div class="search-group">
+                <label for="searchCity">Destination</label>
+                <input type="text" id="searchCity" placeholder="Where are you going? (e.g., Geneva, Paris)">
+            </div>
+            <div class="search-group">
+                <label for="searchCheckIn">Check-in</label>
+                <input type="date" id="searchCheckIn">
+            </div>
+            <div class="search-group">
+                <label for="searchCheckOut">Check-out</label>
+                <input type="date" id="searchCheckOut">
+            </div>
+            <button class="search-btn" onclick="searchHotels()">Search</button>
+        </div>
+        <div id="searchStatus" class="status" style="display:none;"></div>
+    </div>
+
+    <!-- RESULTS LIST -->
+    <section id="resultsSection" class="results-section">
+        <div class="results-header">
+            <div class="results-count" id="resultsCount">0 hotels found</div>
+            <div>
+                <button class="filter-btn active" onclick="filterResults('all')">All</button>
+                <button class="filter-btn" onclick="filterResults(5)">5 Stars</button>
+                <button class="filter-btn" onclick="filterResults(4)">4 Stars</button>
+            </div>
+        </div>
+        <div id="hotelsList"></div>
+    </section>
+
+    <!-- BOOKING MODAL -->
+    <div id="bookingModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Complete Booking</h2>
+                <button class="close-modal" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="selected-hotel-info">
+                    <h3 id="modalHotelName">Hotel Name</h3>
+                    <p id="modalHotelAddress" style="color: #666;"></p>
+                    <p id="modalHotelPhone" style="color: #666; font-size: 0.9rem;"></p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="guestName" placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="guestPhone" placeholder="+1 234 567 8900">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Check-in</label>
+                        <input type="date" id="modalCheckIn" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Check-out</label>
+                        <input type="date" id="modalCheckOut" readonly>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Rooms</label>
+                        <input type="number" id="modalRooms" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Nights</label>
+                        <input type="text" id="modalNights" readonly placeholder="Auto-calculated">
+                    </div>
+                </div>
+                <div class="form-row">
+    <div class="form-group">
+        <label for="roomType">Room Type</label>
+        <select id="roomType" style="padding:10px; border:1px solid #ddd; border-radius:4px; font-size:1rem;">
+            <option value="">-- Select Room Type --</option>
+            <option value="standard_double">Standard Double Bed</option>
+            <option value="standard_twin">Standard Twin Beds</option>
+            <option value="standard_triple">Standard Triple Beds</option>
+            <option value="bed_mixed_dormitory_room">2 Bunk Beds</option>
+        </select>
+    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+                <button class="confirm-btn" onclick="confirmBooking()">Confirm & Download PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA & STATE ---
+        let allHotels = [];
+        let filteredHotels = [];
+        let currentHotel = null;
+
+        // Assign consistent image based on hotel name hash + hotel type
+		function getHotelImage(hotel) {
+    		// Pick pool based on hoteltype from CSV (case-insensitive)
+    		const type = (hotel.hoteltype || "").toLowerCase();
+		    const pool = type === "luxury" ? IMAGES_LUXURY : IMAGES_ECONOMY;
+    
+    		// Hash function stays the same for consistency
+    		let hash = 0;
+    		const str = (hotel.hotelname + hotel.city).toLowerCase();
+    		for (let i = 0; i < str.length; i++) {
+        		hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        		hash |= 0;
+    		}
+    		const index = Math.abs(hash) % pool.length;
+    		return pool[index];
+		}
+
+        // --- 2. CSV PARSER ---
+        // Handles quoted fields (commas in addresses) and selects only needed columns
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            if (lines.length < 2) return [];
+            
+            // Normalize headers (lowercase, remove spaces/symbols)
+            const headers = lines[0].split(',').map(h => 
+                h.trim().toLowerCase().replace(/[^\w]/g, '')
+            );
+
+            //  EDIT THESE to match your CSV columns
+            const neededColumns = ['countryname', 'city', 'hotelname', 'address', 'phone', 'rating', 'hoteltype'];
+            
+            const parsedData = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                if (!line.trim()) continue; // Skip empty lines
+
+                const values = [];
+                let inQuotes = false, current = '';
+                
+                // Manual CSV splitting to handle "Address, with comma"
+                for (let char of line) {
+                    if (char === '"') inQuotes = !inQuotes;
+                    else if (char === ',' && !inQuotes) { values.push(current.trim()); current = ''; }
+                    else current += char;
+                }
+                values.push(current.trim());
+
+                // Map only needed columns
+                const obj = {};
+                neededColumns.forEach(col => {
+                    const idx = headers.indexOf(col);
+                    obj[col] = (idx !== -1 && idx < values.length) ? values[idx] : '';
+                });
+
+                if (obj.hotelname) parsedData.push(obj);
+            }
+            return parsedData;
+        }
+
+        // --- 3. LOAD DATA ---
+        async function loadHotels() {
+            try {
+                const response = await fetch('hotels_datasheet.csv?v=' + Date.now());
+                if (!response.ok) throw new Error("CSV not found");
+                
+                const csvText = await response.text();
+                allHotels = parseCSV(csvText);
+                
+                // Assign images and parse rating numbers
+                allHotels.forEach(h => {
+                    h.image = getHotelImage(h);
+                    h.ratingNum = parseInt(h.rating) || 0;
+                    // Generate stars string
+                    h.starsStr = '★'.repeat(h.ratingNum);
+                });
+
+                console.log(`✅ Loaded ${allHotels.length} hotels`);
+            } catch (err) {
+                console.error("Error:", err);
+                document.getElementById('searchStatus').textContent = "⚠️ Error loading hotels_datasheet. Make sure file is in the same folder.";
+                document.getElementById('searchStatus').style.display = 'block';
+            }
+        }
+
+        // --- 4. SEARCH & FILTER ---
+        function searchHotels() {
+            const cityQuery = document.getElementById('searchCity').value.trim().toLowerCase();
+            const checkIn = document.getElementById('searchCheckIn').value;
+            const checkOut = document.getElementById('searchCheckOut').value;
+
+            if (!cityQuery) { alert("Please enter a destination"); return; }
+
+            // Filter by city or country
+            filteredHotels = allHotels.filter(h => 
+                h.city.toLowerCase().includes(cityQuery) || 
+                (h.countryname && h.countryname.toLowerCase().includes(cityQuery))
+            );
+
+            document.getElementById('resultsSection').style.display = 'block';
+            renderHotels(filteredHotels);
+            
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function filterResults(stars) {
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (stars === 'all') {
+                renderHotels(filteredHotels);
+            } else {
+                const byStars = filteredHotels.filter(h => h.ratingNum === stars);
+                renderHotels(byStars);
+            }
+        }
+
+        function renderHotels(list) {
+            const container = document.getElementById('hotelsList');
+            const count = document.getElementById('resultsCount');
+            
+            count.textContent = `${list.length} properties found`;
+            
+            if (list.length === 0) {
+                container.innerHTML = '<div class="no-results">No hotels found matching your search.</div>';
+                return;
+            }
+
+            container.innerHTML = list.map(hotel => `
+                <div class="hotel-card">
+                    <img src="${hotel.image}" alt="${hotel.hotelname}" class="hotel-image" loading="lazy">
+                    <div class="hotel-content">
+                        <div style="display:flex; justify-content:space-between; align-items:start;">
+                            <div class="hotel-name">${hotel.hotelname}</div>
+                            <div class="hotel-rating-badge">${hotel.ratingNum} / 10</div>
+                        </div>
+                        <div class="stars" style="margin-bottom:8px;">${hotel.starsStr}</div>
+                        <div class="hotel-address">📍 ${hotel.address}</div>
+                        <div class="hotel-amenities">
+                            <span class="amenity"> Free WiFi</span>
+                            <span class="amenity">🅿️ Parking</span>
+                            <span class="amenity">🍳 Breakfast</span>
+                        </div>
+                        <div class="hotel-footer">
+                            <div class="hotel-phone">📞 ${hotel.phone}</div>
+                            <button class="book-btn" onclick='openBookingModal(${JSON.stringify(hotel).replace(/'/g, "&#39;")})'>Book Now</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- 5. BOOKING MODAL ---
+        function openBookingModal(hotel) {
+            currentHotel = hotel;
+            
+            document.getElementById('modalHotelName').textContent = hotel.hotelname;
+            document.getElementById('modalHotelAddress').textContent = "📍 " + hotel.address;
+            document.getElementById('modalHotelPhone').textContent = "📞 " + hotel.phone;
+            
+            // Copy dates from search
+            const cIn = document.getElementById('searchCheckIn').value;
+            const cOut = document.getElementById('searchCheckOut').value;
+            document.getElementById('modalCheckIn').value = cIn;
+            document.getElementById('modalCheckOut').value = cOut;
+            
+            calculateNights(cIn, cOut);
+            
+            document.getElementById('bookingModal').style.display = 'flex';
+        }
+
+        function closeModal(e) {
+            if (!e || e.target.id === 'bookingModal' || e.target.classList.contains('close-modal')) {
+                document.getElementById('bookingModal').style.display = 'none';
+            }
+        }
+
+        function calculateNights(cIn, cOut) {
+            if (cIn && cOut) {
+                const start = new Date(cIn);
+                const end = new Date(cOut);
+                const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                document.getElementById('modalNights').value = diff > 0 ? `${diff} nights` : 'Invalid dates';
+            }
+        }
+
+        // Watch for date changes in modal
+        ['modalCheckIn', 'modalCheckOut'].forEach(id => {
+            document.getElementById(id).addEventListener('change', (e) => {
+                calculateNights(document.getElementById('modalCheckIn').value, document.getElementById('modalCheckOut').value);
+            });
+        });
+
+        // --- 6. PDF GENERATION (Professional Layout) ---
+async function confirmBooking() {
+    const name = document.getElementById('guestName').value.trim();
+    const phone = document.getElementById('guestPhone').value.trim();
+    const rooms = document.getElementById('modalRooms').value;
+
+    if (!name || !phone) {
+        alert("Please fill in your Name and Phone number.");
+        return;
+    }
+    const roomType = document.getElementById('roomType').value;
+if (!roomType) {
+    alert("Please select a room type.");
+    return;
+}
+    // Room type configurations for PDF
+const roomTypes = {
+    standard_double: {
+        name: "Standard Double Room",
+        description: "1 Double Bed Standard",
+        amenities: "Standard TV, AC, Wi-Fi, Towels, Toiletries"
+    },
+    standard_twin: {
+        name: "Standard Twin Room",
+        description: "2 Single Beds Standard",
+        amenities: "Standard TV, AC, Wi-Fi, Towels, Toiletries"
+    },
+    standard_triple: {
+        name: "Standard Triple Room",
+        description: "3 Beds Standard (1 Double + 1 Single or 3 Singles)",
+        amenities: "Standard TV, AC, Wi-Fi, Towels, Toiletries"
+    },
+    bed_mixed_dormitory_room: {
+        name: "2 Bunk Beds",
+        description: "2 Bunks Beds Standard",
+        amenities: "Standard TV, AC, Wi-Fi, Shared bathroom"
+    }
+};
+
+// Get selected room type (fallback to standard_double)
+const selectedRoomType = document.getElementById('roomType').value;
+const roomInfo = roomTypes[selectedRoomType] || roomTypes.standard_double;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // === HARDCODED STANDARD VALUES (Same for all reservations) ===
+    const ROOM_DETAILS = {
+        name: "Standard Double Room",
+        amenities: "Standard TV, AC, Wi-Fi, Towels, Toiletries",
+        mealPlan: "No meals included in this room rate"
+    };
+    const CANCELLATION_HOURS = 48;
+    const AGENCY_FOOTER = {
+        name: "AL MUSAFIR AL AWWAL TOURISM",
+        address: "Madinah Road, Ar Ruwais Dist\nJeddah 23214\nSaudi Arabia",
+        contact: "Mahmood - 966537753431"
+    };
+
+    // === GENERATE DATE-BASED RESERVATION NUMBER ===
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0,10).replace(/-/g,''); // YYYYMMDD
+    const randomStr = Math.random().toString(36).substring(2,5).toUpperCase();
+    const reservationNumber = `HTL-${dateStr}-${randomStr}`;
+
+    // === CALCULATE CANCELLATION DEADLINE ===
+    const checkinStr = document.getElementById('modalCheckIn').value;
+    const checkinDateTime = new Date(`${checkinStr}T23:59`);
+    const cancelDeadline = new Date(checkinDateTime.getTime() - (CANCELLATION_HOURS * 60 * 60 * 1000));
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const cancelDateFormatted = `${cancelDeadline.getDate()} ${months[cancelDeadline.getMonth()]} ${cancelDeadline.getFullYear()} at ${cancelDeadline.getHours().toString().padStart(2,'0')}:${cancelDeadline.getMinutes().toString().padStart(2,'0')}`;
+
+    // === HEADER SECTION ===
+    doc.setFillColor(242, 242, 242);
+    doc.roundedRect(10, 10, 190, 45, 3, 3, 'F');
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Booking Confirmation", 105, 25, null, null, 'center');
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Thank you ${name}`, 15, 35);
+    doc.setFontSize(12);
+    doc.text("Congratulations, Your booking is now confirmed", 15, 45);
+
+    // === RESERVATION TABLE ===
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bolditalic");
+    doc.text(`Reservation for ${name}`, 15, 65);
+
+    doc.setFontSize(12);
+    doc.setFillColor(0, 51, 102); // Dark blue header
+    doc.setTextColor(255, 255, 255);
+    doc.setDrawColor(128, 128, 128);
+    doc.rect(15, 70, 180, 12, 'FD');
+    doc.text(`Reservation Number: ${reservationNumber}`, 17, 77);
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "bold");
+    doc.rect(15, 82, 180, 14, 'D');
+    const nightsText = document.getElementById('modalNights').value;
+    doc.text(`${nightsText}`, 17, 90);
+    doc.text(`Reservation for ${name}`, 17, 95);
+
+    doc.setFont("helvetica", "normal");
+    doc.rect(15, 96, 180, 14, 'D');
+    doc.text("Check-in:", 17, 104);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${document.getElementById('modalCheckIn').value} (14:00)`, 17, 109);
+
+    doc.setFont("helvetica", "normal");
+    doc.rect(15, 110, 180, 14, 'D');
+    doc.text("Check-out:", 17, 118);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${document.getElementById('modalCheckOut').value} (12:00)`, 17, 123);
+
+    doc.line(17, 130, 195, 130);
+
+    // === HOTEL SECTION WITH IMAGE (Canvas Method) ===
+doc.setFontSize(12);
+doc.setDrawColor(128, 128, 128);
+
+// 👈 LEFT BOX FOR IMAGE (kept!)
+doc.rect(15, 140, 50, 30, 'D');
+
+if (currentHotel && currentHotel.image) {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = currentHotel.image;
+
+    await new Promise((resolve) => {
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            const imageData = canvas.toDataURL("image/jpeg");
+            // Draw image INSIDE the left box
+            doc.addImage(imageData, "JPEG", 16, 141, 48, 28);
+            resolve();
+        };
+        img.onerror = () => {
+            // Fallback: draw placeholder INSIDE the same box
+            doc.setFillColor(240, 240, 240);
+            doc.rect(16, 141, 48, 28, 'F');
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(8);
+            doc.text("Image", 40, 156, null, null, 'center');
+            resolve();
+        };
+    });
+}
+
+// 👈 RIGHT BOX FOR HOTEL DETAILS (unchanged)
+doc.rect(65, 140, 130, 30, 'D');
+doc.setDrawColor(255, 255, 255);
+doc.line(65, 140, 65, 170);
+doc.setDrawColor(128, 128, 128);
+doc.setTextColor(0, 0, 0);
+doc.setFont("helvetica", "bold");
+doc.setFontSize(14);
+doc.text(currentHotel.hotelname, 67, 150);
+const textWidth = doc.getTextWidth(currentHotel.hotelname);
+doc.line(67, 151, 67 + textWidth, 151);
+doc.setFontSize(12);
+doc.setFont("helvetica", "normal");
+doc.text(currentHotel.address, 67, 157);
+doc.setTextColor(0, 0, 0);
+doc.text(currentHotel.phone, 67, 164);
+doc.line(67, 165, 67 + doc.getTextWidth(currentHotel.phone), 165);
+
+    // === ROOM & POLICY SECTION (Two Columns) ===
+    doc.rect(15, 170, 97, 50, 'D'); // Left column
+    doc.rect(112, 170, 83, 50, 'D'); // Right column
+    doc.setTextColor(0, 0, 0);
+
+    // Left: Room Details
+    doc.setFont("helvetica", "bold");
+    doc.text("Room Details", 17, 180);
+    doc.setFont("helvetica", "normal");
+    doc.text(roomInfo.name, 17, 185);
+    doc.text(roomInfo.description, 17, 190);
+    doc.text(roomInfo.amenities, 17, 195);
+    doc.setFont("helvetica", "bold");
+    doc.text("Meal plan:", 17, 200);
+    doc.setFont("helvetica", "normal");
+    doc.text("No meals included in this room rate", 17, 205);
+
+    // Right: Policies
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Payment Details: No prepayment required.", 114, 180);
+    doc.text("Cancellation Policy:", 114, 188);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Free cancellation until ${cancelDateFormatted}`, 114, 193, { maxWidth: 80, align: 'justify' });
+    doc.setTextColor(255, 0, 0); // Red warning
+    doc.text("Changing the dates of your stay is not possible.", 114, 203);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "bold");
+    doc.text("Guarantee:", 114, 211);
+    doc.setFont("helvetica", "normal");
+    doc.text("Room is guaranteed upon arrival on time.", 114, 216);
+
+    // === AGENCY FOOTER ===
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.line(15, 250, 195, 250);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text(AGENCY_FOOTER.name, 15, 253, { align: 'left' });
+    doc.setFont("helvetica", "normal");
+    const addressLines = AGENCY_FOOTER.address.split('\n');
+    addressLines.forEach((line, i) => {
+        doc.text(line, 15, 256 + (i * 3), { align: 'left' });
+    });
+    doc.setFont("helvetica", "bold");
+    doc.text("Phone", 15, 268, { align: 'left' });
+    doc.setFont("helvetica", "normal");
+    doc.text(AGENCY_FOOTER.contact, 15, 271, { align: 'left' });
+    
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text("Thank you for your reservation!", 105, 278, null, null, 'center');
+    doc.text("Please present this confirmation at check-in", 105, 282, null, null, 'center');
+    doc.text("© 2023 Hotel Reservation System", 105, 286, null, null, 'center');
+
+    // === SAVE PDF ===
+    doc.save(`Reservation_${name.replace(/\s+/g, '_')}_${currentHotel.city}.pdf`);
+    closeModal();
+}
+        // Initialize
+        loadHotels();
+    </script>
+</body>
+</html>
