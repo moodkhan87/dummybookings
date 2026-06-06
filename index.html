@@ -274,7 +274,7 @@
                     h.image = getHotelImage(h);
                     h.ratingNum = parseInt(h.rating) || 0;
                     // Generate stars string
-                    h.starsStr = '★'.repeat(ratingNum);
+                    h.starsStr = '★'.repeat(h.ratingNum);
                 });
 
                 console.log(`✅ Loaded ${allHotels.length} hotels`);
