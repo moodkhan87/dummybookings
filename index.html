@@ -263,7 +263,7 @@
         // --- 3. LOAD DATA ---
         async function loadHotels() {
             try {
-                const response = await fetch('hotels_datasheet.csv?v=' + Date.now());
+                const response = await fetch('hotels_datasheet.csv');
                 if (!response.ok) throw new Error("CSV not found");
                 
                 const csvText = await response.text();
