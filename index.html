@@ -272,9 +272,9 @@
                 // Assign images and parse rating numbers
                 allHotels.forEach(h => {
                     h.image = getHotelImage(h);
-                    h.ratingNum = parseInt(h.rating) || 0;
+                    h.rating = parseInt(h.rating) || 0;
                     // Generate stars string
-                    h.starsStr = '★'.repeat(h.ratingNum);
+                    h.starsStr = '★'.repeat(h.rating);
                 });
 
                 console.log(`✅ Loaded ${allHotels.length} hotels`);
@@ -314,7 +314,7 @@
             if (stars === 'all') {
                 renderHotels(filteredHotels);
             } else {
-                const byStars = filteredHotels.filter(h => h.ratingNum === stars);
+                const byStars = filteredHotels.filter(h => h.rating === stars);
                 renderHotels(byStars);
             }
         }
@@ -336,7 +336,7 @@
                     <div class="hotel-content">
                         <div style="display:flex; justify-content:space-between; align-items:start;">
                             <div class="hotel-name">${hotel.hotelname}</div>
-                            <div class="hotel-rating-badge">${hotel.ratingNum} / 10</div>
+                            <div class="hotel-rating-badge">${hotel.rating} / 10</div>
                         </div>
                         <div class="stars" style="margin-bottom:8px;">${hotel.starsStr}</div>
                         <div class="hotel-address">📍 ${hotel.address}</div>
