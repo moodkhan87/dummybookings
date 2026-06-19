@@ -12,10 +12,54 @@
         body { background: #f0f2f5; color: #333; line-height: 1.5; }
         
         /* --- HEADER --- */
-        .main-header { background: #003580; color: white; padding: 20px; text-align: center; }
-        .main-header h1 { font-size: 2rem; margin-bottom: 5px; }
-        .main-header p { opacity: 0.9; }
+        .main-header {
+         background: #003580;
+         color: white;
+		 padding: 15px 60px 15px 20px; /* Extra right padding keeps title centered */
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         position: relative;
+         min-height: 90px;
+        }
 
+        .header-logo {
+         position: absolute;
+         left: 20px;
+         height: 50px;          /* Desktop size */
+         width: auto;
+         filter: brightness(0) invert(1); /* 🎨 Magic: Turns black SVG to pure white */
+         transition: height 0.2s ease;
+        }
+
+        .header-text {
+         text-align: center;
+        }        
+
+        .header-text h1 {
+         font-size: 2rem;
+         margin-bottom: 5px;
+        }        
+
+        .header-text p {
+         opacity: 0.9;
+         margin: 0;
+        }
+
+        /*  Mobile Optimization */
+        @media (max-width: 768px) {
+          .main-header {
+            padding: 12px 15px 12px 55px;
+            min-height: 70px;
+          }
+          .header-logo {
+            height: 35px;      /* Smaller on mobile */
+            left: 12px;
+          }
+          .header-text h1 {
+            font-size: 1.5rem;
+          }
+        }
         /* --- SEARCH SECTION --- */
         .search-container { max-width: 900px; margin: 20px auto 20px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; z-index: 10; }
         .search-grid { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end; }
@@ -91,8 +135,13 @@
 <body>
 
     <header class="main-header">
+      <!-- 1. Logo Image (Left aligned) -->
+      <img src="logo.svg" alt="Agency Logo" class="header-logo">
+	  <!-- 2. Text Content (Centered) -->
+      <div class="header-text">
         <h1>Hotel Reservation System</h1>
         <p>Find and book your perfect stay</p>
+	  </div>
     </header>
 
     <!-- SEARCH BAR -->
