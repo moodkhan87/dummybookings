@@ -354,24 +354,24 @@
 
         // --- 4. SEARCH & FILTER ---
         function searchHotels() {
-            const cityQuery = document.getElementById('searchCity').value.trim().toLowerCase();
-            const checkIn = document.getElementById('searchCheckIn').value;
-            const checkOut = document.getElementById('searchCheckOut').value;
-
-            if (!cityQuery) { alert("Please enter a destination"); return; }
-
-            // Filter by city or country
-            filteredHotels = allHotels.filter(h => 
-                h.city.toLowerCase().includes(cityQuery) || 
-                (h.countryname && h.countryname.toLowerCase().includes(cityQuery))
-            );
-
-            document.getElementById('resultsSection').style.display = 'block';
-            renderHotels(filteredHotels);
-            
-            // Scroll to results
-            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
-        }
+		    const rawQuery = document.getElementById('searchCity').value.trim();
+		    if (!rawQuery) { alert("Please enter a destination"); return; }
+		
+		    // 1️⃣ Normalize search input
+		    const cityQuery = rawQuery.toLowerCase();
+		
+		    // 2️⃣ Filter with case-insensitive + trimmed comparison + safe fallbacks
+		    filteredHotels = allHotels.filter(h => {
+		        const city = (h.city || "").toLowerCase().trim();
+		        const country = (h.countryname || "").toLowerCase().trim();
+		        return city.includes(cityQuery) || country.includes(cityQuery);
+		    });
+		
+		    // 3️⃣ Show results & scroll
+		    document.getElementById('resultsSection').style.display = 'block';
+		    renderHotels(filteredHotels);
+		    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+		}
 
         function filterResults(stars) {
             // Update active button
@@ -672,23 +672,63 @@ doc.line(67, 165, 67 + doc.getTextWidth(currentHotel.phone), 165);
     doc.text("Room is guaranteed upon arrival on time.", 114, 216);
 
     // === AGENCY FOOTER ===
-	doc.setDrawColor(0, 0, 0);
-	doc.setLineWidth(0.2);
-	doc.line(15, 250, 195, 250);
-	doc.setFontSize(8);
-	doc.setFont("helvetica", "bold");
-	if (agencyName) doc.text(agencyName, 15, 253, { align: 'left' });
-	
-	doc.setFont("helvetica", "normal");
-	if (agencyAddress) {
-	    const addressLines = agencyAddress.split('\n');
-	    addressLines.forEach((line, i) => doc.text(line, 15, 256 + (i * 3), { align: 'left' }));
-	}
+doc.setDrawColor(0, 0, 0);
+doc.setLineWidth(0.2);
+doc.line(15, 250, 195, 250);
+
+let footerY = 253;
+
+// 1️⃣ Agency Name (only if filled)
+if (agencyName) {
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.text("Phone", 15, 268, { align: 'left' });
-    doc.setFont("helvetica", "normal");
-    doc.text(agencyContact, 15, 271, { align: 'left' });
-    
+    doc.text(agencyName, 15, footerY, { align: 'left' });
+    footerY += 4;
+}
+
+	// 2️⃣ Agency Address (smart split: commas first, then character limit fallback)
+	if (agencyAddress) {
+	    doc.setFont("helvetica", "normal");
+	    doc.setFontSize(7);
+	    
+	    let addressLines;
+	    if (agencyAddress.includes(',')) {
+	        // User typed commas → split by them
+	        addressLines = agencyAddress.split(',').map(line => line.trim()).filter(line => line);
+	    } else {
+	        // No commas → auto-wrap at ~40 chars (word-safe)
+	        const maxChars = 40;
+	        addressLines = [];
+	        const words = agencyAddress.split(' ');
+	        let currentLine = '';
+	        
+	        words.forEach(word => {
+	            if ((currentLine + ' ' + word).length <= maxChars) {
+	                currentLine += (currentLine ? ' ' : '') + word;
+	            } else {
+	                if (currentLine) addressLines.push(currentLine);
+	                currentLine = word;
+	            }
+	        });
+	        if (currentLine) addressLines.push(currentLine);
+	    }
+	    
+	    // Draw each line
+	    addressLines.forEach((line, i) => {
+	        doc.text(line, 15, footerY + (i * 3), { align: 'left' });
+	    });
+	    footerY += (addressLines.length * 3) + 2;
+	}
+	
+	// 3️⃣ Phone Label + Number (only show if contact exists)
+	if (agencyContact) {
+	    doc.setFontSize(8);
+	    doc.setFont("helvetica", "bold");
+	    doc.text("Phone", 15, footerY, { align: 'left' });
+	    doc.setFont("helvetica", "normal");
+	    doc.text(agencyContact, 15, footerY + 3, { align: 'left' });
+	}
+	    
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text("Thank you for your reservation!", 105, 278, null, null, 'center');
