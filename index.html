@@ -515,10 +515,15 @@ const roomInfo = roomTypes[selectedRoomType] || roomTypes.standard_double;
         mealPlan: "No meals included in this room rate"
     };
     const CANCELLATION_HOURS = 48;
-    // 🔄 Dynamic agency details with fallback to defaults
-	const agencyName = document.getElementById('agencyName').value.trim() || "AL MUSAFIR AL AWWAL TOURISM";
-	const agencyAddress = document.getElementById('agencyAddress').value.trim() || "Madinah Road, Ar Ruwais Dist\nJeddah 23214\nSaudi Arabia";
-	const agencyContact = document.getElementById('agencyContact').value.trim() || "Mahmood - 966537753431";
+    // 🔄 no fallback. pure user input
+	const agencyName = document.getElementById('agencyName').value.trim();
+	const agencyAddress = document.getElementById('agencyAddress').value.trim();
+	const agencyContact = document.getElementById('agencyContact').value.trim();
+
+	// 💾 Save to localStorage for next session
+	localStorage.setItem('agencyName', agencyName);
+	localStorage.setItem('agencyAddress', agencyAddress);
+	localStorage.setItem('agencyContact', agencyContact);
     
     // === GENERATE DATE-BASED RESERVATION NUMBER ===
     const today = new Date();
@@ -667,17 +672,18 @@ doc.line(67, 165, 67 + doc.getTextWidth(currentHotel.phone), 165);
     doc.text("Room is guaranteed upon arrival on time.", 114, 216);
 
     // === AGENCY FOOTER ===
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.2);
-    doc.line(15, 250, 195, 250);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.text(agencyName, 15, 253, { align: 'left' });
-    doc.setFont("helvetica", "normal");
-    const addressLines = agencyAddress.split('\n');
-    addressLines.forEach((line, i) => {
-        doc.text(line, 15, 256 + (i * 3), { align: 'left' });
-    });
+	doc.setDrawColor(0, 0, 0);
+	doc.setLineWidth(0.2);
+	doc.line(15, 250, 195, 250);
+	doc.setFontSize(8);
+	doc.setFont("helvetica", "bold");
+	if (agencyName) doc.text(agencyName, 15, 253, { align: 'left' });
+	
+	doc.setFont("helvetica", "normal");
+	if (agencyAddress) {
+	    const addressLines = agencyAddress.split('\n');
+	    addressLines.forEach((line, i) => doc.text(line, 15, 256 + (i * 3), { align: 'left' }));
+	}
     doc.setFont("helvetica", "bold");
     doc.text("Phone", 15, 268, { align: 'left' });
     doc.setFont("helvetica", "normal");
@@ -695,6 +701,14 @@ doc.line(67, 165, 67 + doc.getTextWidth(currentHotel.phone), 165);
 }
         // Initialize
         loadHotels();
+
+		// 🔁 Load saved agency details on page load
+		document.addEventListener('DOMContentLoaded', () => {
+		    ['agencyName', 'agencyAddress', 'agencyContact'].forEach(id => {
+		        const saved = localStorage.getItem(id);
+		        if (saved) document.getElementById(id).value = saved;
+		    });
+		});
     </script>
 </body>
 </html>
