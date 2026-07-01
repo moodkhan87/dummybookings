@@ -508,335 +508,203 @@
         });
 
         // --- 6. PDF GENERATION (Professional Layout) ---
-async function confirmBooking() {
-    const name = document.getElementById('guestName').value.trim();
-    const phone = document.getElementById('guestPhone').value.trim();
-    const rooms = document.getElementById('modalRooms').value;
-
-    if (!name || !phone) {
-        alert("Please fill in your Name and Phone number.");
-        return;
-    }
-        // 🔁 COLLECT ALL ROOM DATA (1 to 3 rooms)
-    const roomSelects = document.querySelectorAll('.room-type-select');
-    const roomGuestInputs = document.querySelectorAll('.room-guests');
-    const selectedRooms = [];
-    
-    // Loop through every room card and grab the data
-    for (let i = 0; i < roomSelects.length; i++) {
-        const typeValue = roomSelects[i].value;
-        const guestValue = roomGuestInputs[i] ? roomGuestInputs[i].value : 1;
-        
-        if (!typeValue) {
-            alert(`Please select a room type for Room ${i + 1}.`);
-            return; // Stop execution
-        }
-        
-        selectedRooms.push({ type: typeValue, guests: guestValue });
-    }
-
-    // Room type configurations for PDF (Kept for lookup)
-    const roomTypes = {
-        standard_double: { name: "Standard Double Room", desc: "1 Double Bed", amen: "TV, AC, Wi-Fi" },
-        standard_twin: { name: "Standard Twin Room", desc: "2 Single Beds", amen: "TV, AC, Wi-Fi" },
-        standard_triple: { name: "Standard Triple Room", desc: "3 Beds", amen: "TV, AC, Wi-Fi" },
-        bed_mixed_dormitory_room: { name: "2 Bunk Beds", desc: "Dormitory Style", amen: "Shared Bath" }
-    };
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // === HARDCODED STANDARD VALUES (Same for all reservations) ===
-    const ROOM_DETAILS = {
-        name: "Standard Double Room",
-        amenities: "Standard TV, AC, Wi-Fi, Towels, Toiletries",
-        mealPlan: "No meals included in this room rate"
-    };
-    const CANCELLATION_HOURS = 48;
-    // 🔄 no fallback. pure user input
-	const agencyName = document.getElementById('agencyName').value.trim();
-	const agencyAddress = document.getElementById('agencyAddress').value.trim();
-	const agencyContact = document.getElementById('agencyContact').value.trim();
-
-	// 💾 Save to localStorage for next session
-	localStorage.setItem('agencyName', agencyName);
-	localStorage.setItem('agencyAddress', agencyAddress);
-	localStorage.setItem('agencyContact', agencyContact);
-    
-    // === GENERATE DATE-BASED RESERVATION NUMBER ===
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0,10).replace(/-/g,''); // YYYYMMDD
-    const randomStr = Math.random().toString(36).substring(2,5).toUpperCase();
-    const reservationNumber = `HTL-${dateStr}-${randomStr}`;
-
-    // === CALCULATE CANCELLATION DEADLINE ===
-    const checkinStr = document.getElementById('modalCheckIn').value;
-    const checkinDateTime = new Date(`${checkinStr}T23:59`);
-    const cancelDeadline = new Date(checkinDateTime.getTime() - (CANCELLATION_HOURS * 60 * 60 * 1000));
-    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const cancelDateFormatted = `${cancelDeadline.getDate()} ${months[cancelDeadline.getMonth()]} ${cancelDeadline.getFullYear()} at ${cancelDeadline.getHours().toString().padStart(2,'0')}:${cancelDeadline.getMinutes().toString().padStart(2,'0')}`;
-
-    // === HEADER SECTION ===
-    doc.setFillColor(242, 242, 242);
-    doc.roundedRect(10, 10, 190, 45, 3, 3, 'F');
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Booking Confirmation", 105, 25, null, null, 'center');
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Thank you ${name}`, 15, 35);
-    doc.setFontSize(12);
-    doc.text("Congratulations, Your booking is now confirmed", 15, 45);
-
-    // === RESERVATION TABLE ===
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bolditalic");
-    doc.text(`Reservation for ${name}`, 15, 65);
-
-    doc.setFontSize(12);
-    doc.setFillColor(0, 51, 102); // Dark blue header
-    doc.setTextColor(255, 255, 255);
-    doc.setDrawColor(128, 128, 128);
-    doc.rect(15, 70, 180, 12, 'FD');
-    doc.text(`Reservation Number: ${reservationNumber}`, 17, 77);
-
-    doc.setTextColor(0, 0, 0);
-    doc.setFont("helvetica", "bold");
-    doc.rect(15, 82, 180, 14, 'D');
-    const nightsText = document.getElementById('modalNights').value;
-    doc.text(`${nightsText}`, 17, 90);
-    doc.text(`Reservation for ${name}`, 17, 95);
-
-    doc.setFont("helvetica", "normal");
-    doc.rect(15, 96, 180, 14, 'D');
-    doc.text("Check-in:", 17, 104);
-    doc.setFont("helvetica", "bold");
-    doc.text(`${document.getElementById('modalCheckIn').value} (14:00)`, 17, 109);
-
-    doc.setFont("helvetica", "normal");
-    doc.rect(15, 110, 180, 14, 'D');
-    doc.text("Check-out:", 17, 118);
-    doc.setFont("helvetica", "bold");
-    doc.text(`${document.getElementById('modalCheckOut').value} (12:00)`, 17, 123);
-
-    doc.line(17, 130, 195, 130);
-
-    // === HOTEL SECTION WITH IMAGE (Canvas Method) ===
-doc.setFontSize(12);
-doc.setDrawColor(128, 128, 128);
-
-// 👈 LEFT BOX FOR IMAGE (kept!)
-doc.rect(15, 140, 50, 30, 'D');
-
-if (currentHotel && currentHotel.image) {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = currentHotel.image;
-
-    await new Promise((resolve) => {
-        img.onload = () => {
-            const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0);
-            const imageData = canvas.toDataURL("image/jpeg");
-            // Draw image INSIDE the left box
-            doc.addImage(imageData, "JPEG", 16, 141, 48, 28);
-            resolve();
-        };
-        img.onerror = () => {
-            // Fallback: draw placeholder INSIDE the same box
-            doc.setFillColor(240, 240, 240);
-            doc.rect(16, 141, 48, 28, 'F');
-            doc.setTextColor(100, 100, 100);
-            doc.setFontSize(8);
-            doc.text("Image", 40, 156, null, null, 'center');
-            resolve();
-        };
-    });
-}
-
-// 👈 RIGHT BOX FOR HOTEL DETAILS (unchanged)
-doc.rect(65, 140, 130, 30, 'D');
-doc.setDrawColor(255, 255, 255);
-doc.line(65, 140, 65, 170);
-doc.setDrawColor(128, 128, 128);
-doc.setTextColor(0, 0, 0);
-doc.setFont("helvetica", "bold");
-doc.setFontSize(14);
-doc.text(currentHotel.hotelname, 67, 150);
-const textWidth = doc.getTextWidth(currentHotel.hotelname);
-doc.line(67, 151, 67 + textWidth, 151);
-doc.setFontSize(12);
-doc.setFont("helvetica", "normal");
-doc.text(currentHotel.address, 67, 157);
-doc.setTextColor(0, 0, 0);
-doc.text(currentHotel.phone, 67, 164);
-doc.line(67, 165, 67 + doc.getTextWidth(currentHotel.phone), 165);
-
-    // === ROOM & POLICY SECTION (DYNAMIC FORK) ===
-    
-    if (selectedRooms.length === 1) {
-        // ✅ PATH A: 1 Room -> Use YOUR EXACT EXISTING LAYOUT (Zero visual change)
-        const r = selectedRooms[0];
-        const info = roomTypes[r.type] || roomTypes.standard_double;
-
-        doc.rect(15, 170, 97, 50, 'D'); // Left column
-        doc.rect(112, 170, 83, 50, 'D'); // Right column
-        doc.setTextColor(0, 0, 0);
-
-        // Left: Room Details
-        doc.setFont("helvetica", "bold");
-        doc.text("Room Details", 17, 180);
-        doc.setFont("helvetica", "normal");
-        doc.text(info.name, 17, 185);
-        doc.text(info.desc, 17, 190);
-        doc.text(info.amen, 17, 195);
-        doc.setFont("helvetica", "bold");
-        doc.text("Meal plan:", 17, 200);
-        doc.setFont("helvetica", "normal");
-        doc.text("No meals included in this room rate", 17, 205);
-
-        // Right: Policies
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text("Payment Details: No prepayment required.", 114, 180);
-        doc.text("Cancellation Policy:", 114, 188);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Free cancellation until ${cancelDateFormatted}`, 114, 193, { maxWidth: 80, align: 'justify' });
-        doc.setTextColor(255, 0, 0); // Red warning
-        doc.text("Changing the dates of your stay is not possible.", 114, 203);
-        doc.setTextColor(0, 0, 0);
-        doc.setFont("helvetica", "bold");
-        doc.text("Guarantee:", 114, 211);
-        doc.setFont("helvetica", "normal");
-        doc.text("Room is guaranteed upon arrival on time.", 114, 216);
-
-    } else {
-        // ✅ PATH B: 2-3 Rooms -> Use COMPACT TABLE LAYOUT
-        let y = 170;
-        const tableHeight = (selectedRooms.length * 10) + 15;
-
-        // Outer Box
-        doc.rect(15, y, 180, tableHeight, 'D');
-        
-        // Header Row
-        doc.setFillColor(240, 240, 240);
-        doc.rect(15, y, 180, 10, 'F');
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text("Room #", 17, y + 7);
-        doc.text("Room Type", 35, y + 7);
-        doc.text("Guests", 175, y + 7);
-        
-        // Divider Line
-        doc.line(15, y + 10, 195, y + 10);
-        
-        // Data Rows
-        let rowY = y + 18;
-        selectedRooms.forEach((room, i) => {
-            const info = roomTypes[room.type] || roomTypes.standard_double;
-            
-            // Draw row background (zebra striping optional, keeping it simple white)
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(10);
-            
-            doc.text((i + 1).toString(), 17, rowY);
-            doc.text(info.name, 35, rowY);
-            doc.text(room.guests.toString(), 175, rowY);
-            
-            rowY += 10; // Move down for next row
-            
-            // Draw line between rows
-            if (i < selectedRooms.length - 1) {
-                doc.line(15, rowY - 3, 195, rowY - 3);
-            }
-        });
-        
-        // Policies (Moved below table for space)
-        let policyY = y + tableHeight + 5;
-        doc.setFont("helvetica", "bold");
-        doc.text("Cancellation Policy:", 15, policyY);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Free cancellation until ${cancelDateFormatted}`, 15, policyY + 5, { maxWidth: 180, align: 'justify' });
-        
-        policyY += 15;
-        doc.setTextColor(255, 0, 0); 
-        doc.text("Changing the dates of your stay is not possible.", 15, policyY);
-        doc.setTextColor(0, 0, 0);
-    }
-    // === AGENCY FOOTER ===
-doc.setDrawColor(0, 0, 0);
-doc.setLineWidth(0.2);
-doc.line(15, 250, 195, 250);
-
-let footerY = 253;
-
-// 1️⃣ Agency Name (only if filled)
-if (agencyName) {
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.text(agencyName, 15, footerY, { align: 'left' });
-    footerY += 4;
-}
-
-	// 2️⃣ Agency Address (smart split: commas first, then character limit fallback)
-	if (agencyAddress) {
-	    doc.setFont("helvetica", "normal");
-	    doc.setFontSize(7);
-	    
-	    let addressLines;
-	    if (agencyAddress.includes(',')) {
-	        // User typed commas → split by them
-	        addressLines = agencyAddress.split(',').map(line => line.trim()).filter(line => line);
-	    } else {
-	        // No commas → auto-wrap at ~40 chars (word-safe)
-	        const maxChars = 40;
-	        addressLines = [];
-	        const words = agencyAddress.split(' ');
-	        let currentLine = '';
-	        
-	        words.forEach(word => {
-	            if ((currentLine + ' ' + word).length <= maxChars) {
-	                currentLine += (currentLine ? ' ' : '') + word;
-	            } else {
-	                if (currentLine) addressLines.push(currentLine);
-	                currentLine = word;
-	            }
-	        });
-	        if (currentLine) addressLines.push(currentLine);
-	    }
-	    
-	    // Draw each line
-	    addressLines.forEach((line, i) => {
-	        doc.text(line, 15, footerY + (i * 3), { align: 'left' });
-	    });
-	    footerY += (addressLines.length * 3) + 2;
-	}
-	
-	// 3️⃣ Phone Label + Number (only show if contact exists)
-	if (agencyContact) {
-	    doc.setFontSize(8);
-	    doc.setFont("helvetica", "bold");
-	    doc.text("Phone", 15, footerY, { align: 'left' });
-	    doc.setFont("helvetica", "normal");
-	    doc.text(agencyContact, 15, footerY + 3, { align: 'left' });
-	}
-	    
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text("Thank you for your reservation!", 105, 278, null, null, 'center');
-    doc.text("Please present this confirmation at check-in", 105, 282, null, null, 'center');
-    doc.text("© 2023 Hotel Reservation System", 105, 286, null, null, 'center');
-
-    // === SAVE PDF ===
-    doc.save(`Reservation_${name.replace(/\s+/g, '_')}_${currentHotel.city}.pdf`);
-    closeModal();
-}
-        // Initialize
+		async function confirmBooking() {
+		    const name = document.getElementById('guestName').value.trim();
+		    const phone = document.getElementById('guestPhone').value.trim();
+		    if (!name || !phone) { alert("Please fill in your Name and Phone number."); return; }
+		
+		    // 🔁 COLLECT ALL ROOM DATA (1 to 3 rooms)
+		    const roomSelects = document.querySelectorAll('.room-type-select');
+		    const roomGuestInputs = document.querySelectorAll('.room-guests');
+		    const selectedRooms = [];
+		
+		    for (let i = 0; i < roomSelects.length; i++) {
+		        const typeValue = roomSelects[i].value;
+		        const guestValue = roomGuestInputs[i] ? roomGuestInputs[i].value : 1;
+		        if (!typeValue) { alert(`Please select a room type for Room ${i + 1}.`); return; }
+		        selectedRooms.push({ type: typeValue, guests: guestValue });
+		    }
+		
+		    const roomTypes = {
+		        standard_double: { name: "Standard Double Room", desc: "1 Double Bed", amen: "TV, AC, Wi-Fi, Towels, Toiletries" },
+		        standard_twin: { name: "Standard Twin Room", desc: "2 Single Beds", amen: "TV, AC, Wi-Fi, Towels, Toiletries" },
+		        standard_triple: { name: "Standard Triple Room", desc: "3 Beds", amen: "TV, AC, Wi-Fi, Towels, Toiletries" },
+		        bed_mixed_dormitory_room: { name: "2 Bunk Beds", desc: "Dormitory Style", amen: "Shared Bathroom" }
+		    };
+		
+		    const { jsPDF } = window.jspdf;
+		    const doc = new jsPDF();
+		
+		    const CANCELLATION_HOURS = 48;
+		    const agencyName = document.getElementById('agencyName').value.trim();
+		    const agencyAddress = document.getElementById('agencyAddress').value.trim();
+		    const agencyContact = document.getElementById('agencyContact').value.trim();
+		
+		    localStorage.setItem('agencyName', agencyName);
+		    localStorage.setItem('agencyAddress', agencyAddress);
+		    localStorage.setItem('agencyContact', agencyContact);
+		
+		    const today = new Date();
+		    const dateStr = today.toISOString().slice(0,10).replace(/-/g,'');
+		    const randomStr = Math.random().toString(36).substring(2,5).toUpperCase();
+		    const reservationNumber = `HTL-${dateStr}-${randomStr}`;
+		
+		    const checkinStr = document.getElementById('modalCheckIn').value;
+		    const checkinDateTime = new Date(`${checkinStr}T23:59`);
+		    const cancelDeadline = new Date(checkinDateTime.getTime() - (CANCELLATION_HOURS * 60 * 60 * 1000));
+		    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+		    const cancelDateFormatted = `${cancelDeadline.getDate()} ${months[cancelDeadline.getMonth()]} ${cancelDeadline.getFullYear()} at ${cancelDeadline.getHours().toString().padStart(2,'0')}:${cancelDeadline.getMinutes().toString().padStart(2,'0')}`;
+		
+		    // === HEADER ===
+		    doc.setFillColor(242, 242, 242);
+		    doc.roundedRect(10, 10, 190, 45, 3, 3, 'F');
+		    doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(0, 0, 0);
+		    doc.text("Booking Confirmation", 105, 25, null, null, 'center');
+		    doc.setFont("helvetica", "normal"); doc.setFontSize(14); doc.setFont("helvetica", "bold");
+		    doc.text(`Thank you ${name}`, 15, 35);
+		    doc.setFontSize(12);
+		    doc.text("Congratulations, Your booking is now confirmed", 15, 45);
+		
+		    // === RESERVATION TABLE ===
+		    doc.setFontSize(14); doc.setFont("helvetica", "bolditalic");
+		    doc.text(`Reservation for ${name}`, 15, 65);
+		    doc.setFontSize(12); doc.setFillColor(0, 51, 102); doc.setTextColor(255, 255, 255); doc.setDrawColor(128, 128, 128);
+		    doc.rect(15, 70, 180, 12, 'FD');
+		    doc.text(`Reservation Number: ${reservationNumber}`, 17, 77);
+		    doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold");
+		    doc.rect(15, 82, 180, 14, 'D');
+		    const nightsText = document.getElementById('modalNights').value;
+		    doc.text(`${nightsText}`, 17, 90);
+		    doc.text(`Reservation for ${name}`, 17, 95);
+		    doc.setFont("helvetica", "normal");
+		    doc.rect(15, 96, 180, 14, 'D');
+		    doc.text("Check-in:", 17, 104);
+		    doc.setFont("helvetica", "bold");
+		    doc.text(`${document.getElementById('modalCheckIn').value} (14:00)`, 17, 109);
+		    doc.setFont("helvetica", "normal");
+		    doc.rect(15, 110, 180, 14, 'D');
+		    doc.text("Check-out:", 17, 118);
+		    doc.setFont("helvetica", "bold");
+		    doc.text(`${document.getElementById('modalCheckOut').value} (12:00)`, 17, 123);
+		    doc.line(17, 130, 195, 130);
+		
+		    // === HOTEL SECTION WITH IMAGE ===
+		    doc.setFontSize(12); doc.setDrawColor(128, 128, 128);
+		    doc.rect(15, 140, 50, 30, 'D');
+		    if (currentHotel && currentHotel.image) {
+		        const img = new Image();
+		        img.crossOrigin = "Anonymous";
+		        img.src = currentHotel.image;
+		        await new Promise((resolve) => {
+		            img.onload = () => {
+		                const canvas = document.createElement("canvas");
+		                canvas.width = img.width; canvas.height = img.height;
+		                const ctx = canvas.getContext("2d"); ctx.drawImage(img, 0, 0);
+		                const imageData = canvas.toDataURL("image/jpeg");
+		                doc.addImage(imageData, "JPEG", 16, 141, 48, 28);
+		                resolve();
+		            };
+		            img.onerror = () => {
+		                doc.setFillColor(240, 240, 240); doc.rect(16, 141, 48, 28, 'F');
+		                doc.setTextColor(100, 100, 100); doc.setFontSize(8);
+		                doc.text("Image", 40, 156, null, null, 'center');
+		                resolve();
+		            };
+		        });
+		    }
+		    doc.rect(65, 140, 130, 30, 'D');
+		    doc.setDrawColor(255, 255, 255); doc.line(65, 140, 65, 170);
+		    doc.setDrawColor(128, 128, 128); doc.setTextColor(0, 0, 0);
+		    doc.setFont("helvetica", "bold"); doc.setFontSize(14);
+		    doc.text(currentHotel.hotelname, 67, 150);
+		    const textWidth = doc.getTextWidth(currentHotel.hotelname);
+		    doc.line(67, 151, 67 + textWidth, 151);
+		    doc.setFontSize(12); doc.setFont("helvetica", "normal");
+		    doc.text(currentHotel.address, 67, 157);
+		    doc.text(currentHotel.phone, 67, 164);
+		    doc.line(67, 165, 67 + doc.getTextWidth(currentHotel.phone), 165);
+		
+		    // === ROOM & POLICY SECTION (DYNAMIC FORK) ===
+		    if (selectedRooms.length === 1) {
+		        // ✅ 1 ROOM: Your exact original layout
+		        const r = selectedRooms[0];
+		        const info = roomTypes[r.type] || roomTypes.standard_double;
+		        doc.rect(15, 170, 97, 50, 'D');
+		        doc.rect(112, 170, 83, 50, 'D');
+		        doc.setTextColor(0, 0, 0);
+		        doc.setFont("helvetica", "bold"); doc.text("Room Details", 17, 180);
+		        doc.setFont("helvetica", "normal");
+		        doc.text(info.name, 17, 185);
+		        doc.text(info.desc, 17, 190);
+		        doc.text(info.amen, 17, 195);
+		        doc.setFont("helvetica", "bold"); doc.text("Meal plan:", 17, 200);
+		        doc.setFont("helvetica", "normal"); doc.text("No meals included in this room rate", 17, 205);
+		        doc.setFontSize(10); doc.setFont("helvetica", "bold");
+		        doc.text("Payment Details: No prepayment required.", 114, 180);
+		        doc.text("Cancellation Policy:", 114, 188);
+		        doc.setFont("helvetica", "normal");
+		        doc.text(`Free cancellation until ${cancelDateFormatted}`, 114, 193, { maxWidth: 80, align: 'justify' });
+		        doc.setTextColor(255, 0, 0);
+		        doc.text("Changing the dates of your stay is not possible.", 114, 203);
+		        doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.text("Guarantee:", 114, 211);
+		        doc.setFont("helvetica", "normal"); doc.text("Room is guaranteed upon arrival on time.", 114, 216);
+		    } else {
+		        // ✅ 2-3 ROOMS: Compact table layout
+		        let y = 170;
+		        const tableHeight = (selectedRooms.length * 10) + 15;
+		        doc.rect(15, y, 180, tableHeight, 'D');
+		        doc.setFillColor(240, 240, 240); doc.rect(15, y, 180, 10, 'F');
+		        doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+		        doc.text("Room #", 17, y + 7);
+		        doc.text("Room Type", 35, y + 7);
+		        doc.text("Guests", 175, y + 7);
+		        doc.line(15, y + 10, 195, y + 10);
+		        let rowY = y + 18;
+		        selectedRooms.forEach((room, i) => {
+		            const info = roomTypes[room.type] || roomTypes.standard_double;
+		            doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+		            doc.text((i + 1).toString(), 17, rowY);
+		            doc.text(info.name, 35, rowY);
+		            doc.text(room.guests.toString(), 175, rowY);
+		            rowY += 10;
+		            if (i < selectedRooms.length - 1) doc.line(15, rowY - 3, 195, rowY - 3);
+		        });
+		        let policyY = y + tableHeight + 5;
+		        doc.setFont("helvetica", "bold"); doc.text("Cancellation Policy:", 15, policyY);
+		        doc.setFont("helvetica", "normal");
+		        doc.text(`Free cancellation until ${cancelDateFormatted}`, 15, policyY + 5, { maxWidth: 180, align: 'justify' });
+		        policyY += 15;
+		        doc.setTextColor(255, 0, 0);
+		        doc.text("Changing the dates of your stay is not possible.", 15, policyY);
+		        doc.setTextColor(0, 0, 0);
+		    }
+		
+		    // === AGENCY FOOTER ===
+		    doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.2); doc.line(15, 250, 195, 250);
+		    let footerY = 253;
+		    if (agencyName) { doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.text(agencyName, 15, footerY, { align: 'left' }); footerY += 4; }
+		    if (agencyAddress) {
+		        doc.setFont("helvetica", "normal"); doc.setFontSize(7);
+		        let addressLines = agencyAddress.includes(',') ? agencyAddress.split(',').map(l => l.trim()).filter(l => l) : [];
+		        if (addressLines.length === 0) {
+		            const maxChars = 40; const words = agencyAddress.split(' '); let cur = '';
+		            words.forEach(w => { if ((cur + ' ' + w).length <= maxChars) { cur += (cur ? ' ' : '') + w; } else { if(cur) addressLines.push(cur); cur = w; } });
+		            if(cur) addressLines.push(cur);
+		        }
+		        addressLines.forEach((line, i) => doc.text(line, 15, footerY + (i * 3), { align: 'left' }));
+		        footerY += (addressLines.length * 3) + 2;
+		    }
+		    if (agencyContact) { doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.text("Phone", 15, footerY, { align: 'left' }); doc.setFont("helvetica", "normal"); doc.text(agencyContact, 15, footerY + 3, { align: 'left' }); }
+		
+		    doc.setFontSize(8); doc.setFont("helvetica", "normal");
+		    doc.text("Thank you for your reservation!", 105, 278, null, null, 'center');
+		    doc.text("Please present this confirmation at check-in", 105, 282, null, null, 'center');
+		    doc.text("© 2023 Hotel Reservation System", 105, 286, null, null, 'center');
+		
+		    doc.save(`Reservation_${name.replace(/\s+/g, '_')}_${currentHotel.city}.pdf`);
+		    closeModal();
+		}
+		// Initialize
         loadHotels();
 
 		// 🔁 Load saved agency details on page load
