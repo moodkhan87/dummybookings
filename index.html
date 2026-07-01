@@ -236,6 +236,7 @@
 				
 				<script>
 				// 🔄 Generate room cards dynamically (max 3)
+				// 🔄 Generate room cards dynamically (max 3)
 				function generateRoomCards(count) {
 				    const container = document.getElementById('roomCardsContainer');
 				    const roomOptions = `
@@ -256,10 +257,10 @@
 				                        ${roomOptions}
 				                    </select>
 				                </div>
-				                ${i === 1 ? `<div class="form-group" style="flex: 1;">
+				                <div class="form-group" style="flex: 1;">
 				                    <label>Guests</label>
-				                    <input type="number" class="room-guests" min="1" max="4" value="2" style="padding:10px; border:1px solid #ddd; border-radius:4px;">
-				                </div>` : ''}
+				                    <input type="number" class="room-guests" data-room="${i}" min="1" max="6" value="2" style="padding:10px; border:1px solid #ddd; border-radius:4px;">
+				                </div>
 				            </div>
 				        `;
 				    }
@@ -649,9 +650,11 @@
 		        doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.text("Guarantee:", 114, 211);
 		        doc.setFont("helvetica", "normal"); doc.text("Room is guaranteed upon arrival on time.", 114, 216);
 		    } else {
-		        // ✅ 2-3 ROOMS: Compact table layout
+		         // ✅ 2-3 ROOMS: Compact table layout with full details
 		        let y = 170;
 		        const tableHeight = (selectedRooms.length * 10) + 15;
+		
+		        // Table Box
 		        doc.rect(15, y, 180, tableHeight, 'D');
 		        doc.setFillColor(240, 240, 240); doc.rect(15, y, 180, 10, 'F');
 		        doc.setFont("helvetica", "bold"); doc.setFontSize(10);
@@ -659,6 +662,8 @@
 		        doc.text("Room Type", 35, y + 7);
 		        doc.text("Guests", 175, y + 7);
 		        doc.line(15, y + 10, 195, y + 10);
+		
+		        // Table Rows
 		        let rowY = y + 18;
 		        selectedRooms.forEach((room, i) => {
 		            const info = roomTypes[room.type] || roomTypes.standard_double;
@@ -669,14 +674,34 @@
 		            rowY += 10;
 		            if (i < selectedRooms.length - 1) doc.line(15, rowY - 3, 195, rowY - 3);
 		        });
-		        let policyY = y + tableHeight + 5;
-		        doc.setFont("helvetica", "bold"); doc.text("Cancellation Policy:", 15, policyY);
+		
+		        //  MISSING DETAILS ADDED BACK (Compact & Safe)
+		        let detailY = y + tableHeight + 8;
+		        doc.setFontSize(8);
+		
+		        // Amenities
+		        doc.setFont("helvetica", "bold");
+		        doc.text("Amenities: TV, AC, Wi-Fi, Towels, Toiletries", 15, detailY);
+		        
+		        // Meal Plan
+		        doc.text("Meal plan: No meals included in this room rate", 15, detailY + 4);
+		        
+		        // Cancellation Policy
+		        doc.setFont("helvetica", "bold"); doc.text("Cancellation Policy:", 15, detailY + 8);
 		        doc.setFont("helvetica", "normal");
-		        doc.text(`Free cancellation until ${cancelDateFormatted}`, 15, policyY + 5, { maxWidth: 180, align: 'justify' });
-		        policyY += 15;
+		        doc.text(`Free cancellation until ${cancelDateFormatted}`, 15, detailY + 12, { maxWidth: 180, align: 'justify' });
+		        
+		        // Red Warning
+		        detailY += 16;
 		        doc.setTextColor(255, 0, 0);
-		        doc.text("Changing the dates of your stay is not possible.", 15, policyY);
+		        doc.text("Changing the dates of your stay is not possible.", 15, detailY);
 		        doc.setTextColor(0, 0, 0);
+		        
+		        // Guarantee
+		        detailY += 6;
+		        doc.setFont("helvetica", "bold"); doc.text("Guarantee:", 15, detailY);
+		        doc.setFont("helvetica", "normal");
+		        doc.text("Room is guaranteed upon arrival on time.", 15, detailY + 4);
 		    }
 		
 		    // === AGENCY FOOTER ===
