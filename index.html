@@ -660,74 +660,60 @@
 		        doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.text("Guarantee:", 114, 211);
 		        doc.setFont("helvetica", "normal"); doc.text("Room is guaranteed upon arrival on time.", 114, 216);
 		    } else {
-		        // ✅ 2-3 ROOMS: Table Layout (Fixed Alignment)
-				let y = 170;
-				const rowH = 14; // Row height
-				const tableH = 12 + (selectedRooms.length * rowH); // 12px header + rows
-				
-				// Outer Box
-				doc.rect(15, y, 180, tableH, 'D');
-				
-				// Header Row
-				doc.setFillColor(240, 240, 240); 
-				doc.rect(15, y, 180, 12, 'F');
-				doc.setFont("helvetica", "bold"); 
-				doc.setFontSize(10);
-				doc.text("Room #", 17, y + 8);
-				doc.text("Room Type", 35, y + 8);
-				doc.text("Guests", 175, y + 8);
-				doc.line(15, y + 12, 195, y + 12);
-				
-				// Data Rows
-				let currentY = y + 12;
-				selectedRooms.forEach((room, i) => {
-				    const info = roomTypes[room.type] || roomTypes.standard_double;
-				    doc.setFont("helvetica", "normal"); 
-				    doc.setFontSize(10);
-				    
-				    // 👇 Vertically centered: currentY + 8 (baseline adjustment for 10pt font in 14px row)
-				    const textY = currentY + 8;
-				    doc.text((i + 1).toString(), 17, textY);
-				    doc.text(`${i + 1} ${info.name}`, 35, textY); // Keeps your "1 Standard..." format
-				    doc.text(room.guests.toString(), 175, textY);
-				    
-				    currentY += rowH;
-				    
-				    // Line separator
-				    if (i < selectedRooms.length - 1) {
-				        doc.line(15, currentY, 195, currentY);
-				    }
-				});
-		
-		        //  MISSING DETAILS ADDED BACK (Compact & Safe)
-		        let detailY = y + tableHeight + 8;
-		        doc.setFontSize(8);
-		
-		        // Amenities
-		        doc.setFont("helvetica", "bold");
-		        doc.text("Amenities: TV, AC, Wi-Fi, Towels, Toiletries", 15, detailY);
-		        
-		        // Meal Plan
-		        doc.text("Meal plan: No meals included in this room rate", 15, detailY + 4);
-		        
-		        // Cancellation Policy
-		        doc.setFont("helvetica", "bold"); doc.text("Cancellation Policy:", 15, detailY + 8);
-		        doc.setFont("helvetica", "normal");
-		        doc.text(`Free cancellation until ${cancelDateFormatted}`, 15, detailY + 12, { maxWidth: 180, align: 'justify' });
-		        
-		        // Red Warning
-		        detailY += 16;
-		        doc.setTextColor(255, 0, 0);
-		        doc.text("Changing the dates of your stay is not possible.", 15, detailY);
-		        doc.setTextColor(0, 0, 0);
-		        
-		        // Guarantee
-		        detailY += 6;
-		        doc.setFont("helvetica", "bold"); doc.text("Guarantee:", 15, detailY);
-		        doc.setFont("helvetica", "normal");
-		        doc.text("Room is guaranteed upon arrival on time.", 15, detailY + 4);
-		    }
-		
+			    // ✅ 2-3 ROOMS: Table Layout (Fixed Alignment)
+			    let y = 170;
+			    const rowH = 14;
+			    const tableH = 12 + (selectedRooms.length * rowH);
+			
+			    // Outer Box
+			    doc.rect(15, y, 180, tableH, 'D');
+			
+			    // Header Row
+			    doc.setFillColor(240, 240, 240); 
+			    doc.rect(15, y, 180, 12, 'F');
+			    doc.setFont("helvetica", "bold"); 
+			    doc.setFontSize(10);
+			    doc.text("Room #", 17, y + 8);
+			    doc.text("Room Type", 35, y + 8);
+			    doc.text("Guests", 175, y + 8);
+			    doc.line(15, y + 12, 195, y + 12);
+			
+			    // Data Rows
+			    let currentY = y + 12;
+			    selectedRooms.forEach((room, i) => {
+			        const info = roomTypes[room.type] || roomTypes.standard_double;
+			        doc.setFont("helvetica", "normal"); 
+			        doc.setFontSize(10);
+			        
+			        const textY = currentY + 8;
+			        doc.text((i + 1).toString(), 17, textY);
+			        doc.text(`${i + 1} ${info.name}`, 35, textY);
+			        doc.text(room.guests.toString(), 175, textY);
+			        
+			        currentY += rowH;
+			        
+			        if (i < selectedRooms.length - 1) {
+			            doc.line(15, currentY, 195, currentY);
+			        }
+			    });
+			
+			    // Details Section (Amenities, Meal Plan, etc.)
+			    let detailY = y + tableH + 8;
+			    doc.setFontSize(8);
+			    doc.text("Amenities: TV, AC, Wi-Fi, Towels, Toiletries", 15, detailY);
+			    doc.text("Meal plan: No meals included in this room rate", 15, detailY + 4);
+			    doc.setFont("helvetica", "bold"); doc.text("Cancellation Policy:", 15, detailY + 8);
+			    doc.setFont("helvetica", "normal");
+			    doc.text(`Free cancellation until ${cancelDateFormatted}`, 15, detailY + 12, { maxWidth: 180, align: 'justify' });
+			    detailY += 16;
+			    doc.setTextColor(255, 0, 0);
+			    doc.text("Changing the dates of your stay is not possible.", 15, detailY);
+			    doc.setTextColor(0, 0, 0);
+			    detailY += 6;
+			    doc.setFont("helvetica", "bold"); doc.text("Guarantee:", 15, detailY);
+			    doc.setFont("helvetica", "normal");
+			    doc.text("Room is guaranteed upon arrival on time.", 15, detailY + 4);
+			}		
 		    // === AGENCY FOOTER ===
 		    doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.2); doc.line(15, 250, 195, 250);
 		    let footerY = 253;
