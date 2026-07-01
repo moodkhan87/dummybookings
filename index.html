@@ -663,10 +663,10 @@
 			    // ✅ 2-3 ROOMS: Table Layout (Fixed Alignment)
 			    let y = 170;
 			    const rowH = 14;
-			    const tableH = 12 + (selectedRooms.length * rowH);
+			    const tableHeight = 12 + (selectedRooms.length * rowH);
 			
 			    // Outer Box
-			    doc.rect(15, y, 180, tableH, 'D');
+			    doc.rect(15, y, 180, tableHeight, 'D');
 			
 			    // Header Row
 			    doc.setFillColor(240, 240, 240); 
@@ -697,8 +697,8 @@
 			        }
 			    });
 			
-			    // Details Section (Amenities, Meal Plan, etc.)
-			    let detailY = y + tableH + 8;
+			    // Details Section
+			    let detailY = y + tableHeight + 8;
 			    doc.setFontSize(8);
 			    doc.text("Amenities: TV, AC, Wi-Fi, Towels, Toiletries", 15, detailY);
 			    doc.text("Meal plan: No meals included in this room rate", 15, detailY + 4);
@@ -713,7 +713,7 @@
 			    doc.setFont("helvetica", "bold"); doc.text("Guarantee:", 15, detailY);
 			    doc.setFont("helvetica", "normal");
 			    doc.text("Room is guaranteed upon arrival on time.", 15, detailY + 4);
-			}		
+			}
 		    // === AGENCY FOOTER ===
 		    doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.2); doc.line(15, 250, 195, 250);
 		    let footerY = 253;
