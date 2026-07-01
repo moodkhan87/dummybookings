@@ -687,7 +687,7 @@
 			        
 			        const textY = currentY + 8;
 			        doc.text((i + 1).toString(), 17, textY);
-			        doc.text(`${i + 1} ${info.name}`, 35, textY);
+			        doc.text(info.name, 35, textY);
 			        doc.text(room.guests.toString(), 175, textY);
 			        
 			        currentY += rowH;
