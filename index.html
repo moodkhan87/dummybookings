@@ -288,7 +288,8 @@
 			    <div class="form-row">
 			        <div class="form-group">
 			            <label>Agency Name</label>
-			            <input type="text" id="agencyName" placeholder="Leave empty for default">
+			            <input type="text" id="agencyName" list="agencyHistoryList" placeholder="Type or select from history...">
+						<datalist id="agencyHistoryList"></datalist>
 			        </div>
 			        <div class="form-group">
 			            <label>Contact Info</label>
@@ -541,9 +542,18 @@
 		    const agencyAddress = document.getElementById('agencyAddress').value.trim();
 		    const agencyContact = document.getElementById('agencyContact').value.trim();
 		
-		    localStorage.setItem('agencyName', agencyName);
-		    localStorage.setItem('agencyAddress', agencyAddress);
-		    localStorage.setItem('agencyContact', agencyContact);
+			// 💾 Save to History (Last 5 unique agencies)
+			if (agencyName) {
+			    const newEntry = { name: agencyName, address: agencyAddress, contact: agencyContact };
+			    
+			    // Get existing history
+			    let history = JSON.parse(localStorage.getItem('agencyHistory') || '[]');
+			    
+			    // Add new entry to top, remove duplicates of the same name, keep only last 5
+			    history = [newEntry, ...history.filter(h => h.name.toLowerCase() !== agencyName.toLowerCase())].slice(0, 5);
+			    
+			    localStorage.setItem('agencyHistory', JSON.stringify(history));
+			}
 		
 		    const today = new Date();
 		    const dateStr = today.toISOString().slice(0,10).replace(/-/g,'');
@@ -668,10 +678,10 @@
 		        selectedRooms.forEach((room, i) => {
 		            const info = roomTypes[room.type] || roomTypes.standard_double;
 		            doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-		            doc.text((i + 1).toString(), 17, rowY);
-		            doc.text(info.name, 35, rowY);
-		            doc.text(room.guests.toString(), 175, rowY);
-		            rowY += 10;
+		            doc.text((i + 1).toString(), 17, rowY + 6);
+		            doc.text(info.name, 35, rowY + 6);
+		            doc.text(room.guests.toString(), 175, rowY + 6);
+		            rowY += 12;
 		            if (i < selectedRooms.length - 1) doc.line(15, rowY - 3, 195, rowY - 3);
 		        });
 		
@@ -732,12 +742,26 @@
 		// Initialize
         loadHotels();
 
-		// 🔁 Load saved agency details on page load
+		// 🔁 Load Agency History & Auto-fill Latest
 		document.addEventListener('DOMContentLoaded', () => {
-		    ['agencyName', 'agencyAddress', 'agencyContact'].forEach(id => {
-		        const saved = localStorage.getItem(id);
-		        if (saved) document.getElementById(id).value = saved;
+		    const history = JSON.parse(localStorage.getItem('agencyHistory') || '[]');
+		    const datalist = document.getElementById('agencyHistoryList');
+		    
+		    // 1. Populate Dropdown Options
+		    datalist.innerHTML = '';
+		    history.forEach(h => {
+		        const option = document.createElement('option');
+		        option.value = h.name;
+		        datalist.appendChild(option);
 		    });
+		    
+		    // 2. Auto-fill fields with the MOST RECENT entry (if exists)
+		    if (history.length > 0) {
+		        const latest = history[0];
+		        document.getElementById('agencyName').value = latest.name || '';
+		        document.getElementById('agencyAddress').value = latest.address || '';
+		        document.getElementById('agencyContact').value = latest.contact || '';
+		    }
 		});
     </script>
 </body>
