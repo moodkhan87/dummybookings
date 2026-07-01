@@ -660,30 +660,44 @@
 		        doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "bold"); doc.text("Guarantee:", 114, 211);
 		        doc.setFont("helvetica", "normal"); doc.text("Room is guaranteed upon arrival on time.", 114, 216);
 		    } else {
-		         // ✅ 2-3 ROOMS: Compact table layout with full details
-		        let y = 170;
-		        const tableHeight = (selectedRooms.length * 10) + 15;
-		
-		        // Table Box
-		        doc.rect(15, y, 180, tableHeight, 'D');
-		        doc.setFillColor(240, 240, 240); doc.rect(15, y, 180, 10, 'F');
-		        doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-		        doc.text("Room #", 17, y + 7);
-		        doc.text("Room Type", 35, y + 7);
-		        doc.text("Guests", 175, y + 7);
-		        doc.line(15, y + 10, 195, y + 10);
-		
-		        // Table Rows
-		        let rowY = y + 18;
-		        selectedRooms.forEach((room, i) => {
-		            const info = roomTypes[room.type] || roomTypes.standard_double;
-		            doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-		            doc.text((i + 1).toString(), 17, rowY + 6);
-		            doc.text(info.name, 35, rowY + 6);
-		            doc.text(room.guests.toString(), 175, rowY + 6);
-		            rowY += 12;
-		            if (i < selectedRooms.length - 1) doc.line(15, rowY - 3, 195, rowY - 3);
-		        });
+		        // ✅ 2-3 ROOMS: Table Layout (Fixed Alignment)
+				let y = 170;
+				const rowH = 14; // Row height
+				const tableH = 12 + (selectedRooms.length * rowH); // 12px header + rows
+				
+				// Outer Box
+				doc.rect(15, y, 180, tableH, 'D');
+				
+				// Header Row
+				doc.setFillColor(240, 240, 240); 
+				doc.rect(15, y, 180, 12, 'F');
+				doc.setFont("helvetica", "bold"); 
+				doc.setFontSize(10);
+				doc.text("Room #", 17, y + 8);
+				doc.text("Room Type", 35, y + 8);
+				doc.text("Guests", 175, y + 8);
+				doc.line(15, y + 12, 195, y + 12);
+				
+				// Data Rows
+				let currentY = y + 12;
+				selectedRooms.forEach((room, i) => {
+				    const info = roomTypes[room.type] || roomTypes.standard_double;
+				    doc.setFont("helvetica", "normal"); 
+				    doc.setFontSize(10);
+				    
+				    // 👇 Vertically centered: currentY + 8 (baseline adjustment for 10pt font in 14px row)
+				    const textY = currentY + 8;
+				    doc.text((i + 1).toString(), 17, textY);
+				    doc.text(`${i + 1} ${info.name}`, 35, textY); // Keeps your "1 Standard..." format
+				    doc.text(room.guests.toString(), 175, textY);
+				    
+				    currentY += rowH;
+				    
+				    // Line separator
+				    if (i < selectedRooms.length - 1) {
+				        doc.line(15, currentY, 195, currentY);
+				    }
+				});
 		
 		        //  MISSING DETAILS ADDED BACK (Compact & Safe)
 		        let detailY = y + tableHeight + 8;
