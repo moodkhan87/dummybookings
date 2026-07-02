@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Geocoder Tool</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: #f0f2f5; color: #333; padding: 30px; }
+
+        .container { max-width: 800px; margin: 0 auto; }
+
+        h1 { color: #003580; font-size: 1.8rem; margin-bottom: 5px; }
+        .subtitle { color: #666; margin-bottom: 30px; font-size: 0.95rem; }
+
+        .card { background: white; border-radius: 8px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+
+        .instructions { background: #f0f8ff; border-left: 4px solid #0071c2; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        .instructions h3 { color: #003580; margin-bottom: 8px; }
+        .instructions ol { padding-left: 20px; }
+        .instructions li { margin-bottom: 5px; font-size: 0.9rem; color: #555; }
+
+        .warning { background: #fff8e1; border-left: 4px solid #febb02; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        .warning strong { color: #b8860b; }
+
+        .file-drop { border: 2px dashed #ccc; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 20px; }
+        .file-drop:hover { border-color: #0071c2; background: #f0f8ff; }
+        .file-drop.active { border-color: #0071c2; background: #e8f4ff; }
+        .file-drop p { color: #666; margin-top: 8px; font-size: 0.9rem; }
+        .file-drop .icon { font-size: 2.5rem; }
+
+        input[type="file"] { display: none; }
+
+        .btn { padding: 12px 24px; border: none; border-radius: 4px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #0071c2; color: white; }
+        .btn-primary:hover { background: #005999; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-success { background: #008009; color: white; }
+        .btn-success:hover { background: #006607; }
+        .btn-danger { background: #cc0000; color: white; margin-left: 10px; }
+        .btn-danger:hover { background: #aa0000; }
+
+        .progress-section { display: none; }
+        .progress-bar-wrap { background: #eee; border-radius: 20px; height: 24px; overflow: hidden; margin: 15px 0; }
+        .progress-bar { background: linear-gradient(90deg, #0071c2, #00a8e0); height: 100%; width: 0%; border-radius: 20px; transition: width 0.3s; display: flex; align-items: center; justify-content: center; }
+        .progress-text { color: white; font-size: 0.8rem; font-weight: 700; white-space: nowrap; padding: 0 10px; }
+
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 15px 0; }
+        .stat-box { background: #f8f9fa; border-radius: 6px; padding: 12px; text-align: center; }
+        .stat-box .value { font-size: 1.5rem; font-weight: 700; color: #003580; }
+        .stat-box .label { font-size: 0.75rem; color: #666; margin-top: 3px; }
+        .stat-box.success .value { color: #008009; }
+        .stat-box.failed .value { color: #cc0000; }
+        .stat-box.pending .value { color: #febb02; }
+
+        .log { background: #1e1e1e; color: #d4d4d4; border-radius: 6px; padding: 15px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; margin-top: 15px; }
+        .log .success { color: #4ec94e; }
+        .log .error { color: #f44747; }
+        .log .info { color: #9cdcfe; }
+        .log .warn { color: #febb02; }
+
+        .download-section { display: none; text-align: center; padding: 20px; }
+        .download-section h3 { color: #008009; margin-bottom: 10px; }
+
+        .eta { color: #666; font-size: 0.85rem; margin-top: 5px; }
+
+        .loaded-info { background: #e8f4ff; border-radius: 6px; padding: 12px; margin-bottom: 15px; display: none; }
+        .loaded-info strong { color: #003580; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🌍 Hotel Geocoder Tool</h1>
+    <p class="subtitle">Converts hotel addresses to exact GPS coordinates using OpenStreetMap Nominatim API</p>
+
+    <div class="card">
+        <div class="instructions">
+            <h3>📋 How to use</h3>
+            <ol>
+                <li>Upload your <strong>hotels_datasheet.csv</strong> file below</li>
+                <li>Click <strong>Start Geocoding</strong> and wait (~18 min for 1069 hotels)</li>
+                <li>Download the updated CSV when done — it replaces the city-level coords with exact hotel GPS pins</li>
+                <li>Upload the new CSV to your Byethost project</li>
+            </ol>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong> Keep this tab open and active while running. Nominatim allows 1 request/second — do not close or refresh the page during geocoding.
+        </div>
+
+        <!-- FILE UPLOAD -->
+        <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
+            <div class="icon">📂</div>
+            <strong>Click to upload hotels_datasheet.csv</strong>
+            <p>or drag and drop here</p>
+        </div>
+        <input type="file" id="fileInput" accept=".csv">
+
+        <div class="loaded-info" id="loadedInfo">
+            ✅ Loaded: <strong id="loadedCount">0</strong> hotels from <strong id="loadedFile">-</strong>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button class="btn btn-primary" id="startBtn" onclick="startGeocoding()" disabled>▶ Start Geocoding</button>
+            <button class="btn btn-danger" id="stopBtn" onclick="stopGeocoding()" style="display:none;">⏹ Stop</button>
+        </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="card progress-section" id="progressSection">
+        <h3 style="margin-bottom:10px;">⚙️ Geocoding Progress</h3>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="value" id="statTotal">0</div>
+                <div class="label">Total Hotels</div>
+            </div>
+            <div class="stat-box success">
+                <div class="value" id="statSuccess">0</div>
+                <div class="label">✅ Found</div>
+            </div>
+            <div class="stat-box failed">
+                <div class="value" id="statFailed">0</div>
+                <div class="label">❌ Not Found</div>
+            </div>
+            <div class="stat-box pending">
+                <div class="value" id="statRemaining">0</div>
+                <div class="label">⏳ Remaining</div>
+            </div>
+        </div>
+
+        <div class="progress-bar-wrap">
+            <div class="progress-bar" id="progressBar">
+                <span class="progress-text" id="progressPct">0%</span>
+            </div>
+        </div>
+        <div class="eta" id="etaText">Estimated time remaining: calculating...</div>
+
+        <div class="log" id="logBox"></div>
+    </div>
+
+    <!-- DOWNLOAD -->
+    <div class="card download-section" id="downloadSection">
+        <h3>🎉 Geocoding Complete!</h3>
+        <p style="color:#666; margin-bottom:15px;">Your CSV is ready with exact GPS coordinates for each hotel.</p>
+        <button class="btn btn-success" onclick="downloadCSV()">⬇ Download Updated CSV</button>
+    </div>
+</div>
+
+<script>
+    let hotels = [];
+    let headers = [];
+    let rawLines = [];
+    let results = [];
+    let isRunning = false;
+    let shouldStop = false;
+    let startTime = null;
+
+    // --- FILE HANDLING ---
+    const fileDrop = document.getElementById('fileDrop');
+    const fileInput = document.getElementById('fileInput');
+
+    fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('active'); });
+    fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('active'));
+    fileDrop.addEventListener('drop', e => {
+        e.preventDefault();
+        fileDrop.classList.remove('active');
+        handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+    function handleFile(file) {
+        if (!file || !file.name.endsWith('.csv')) {
+            alert('Please upload a CSV file.');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = e => {
+            parseCSV(e.target.result, file.name);
+        };
+        reader.readAsText(file);
+    }
+
+    function parseCSV(text, filename) {
+        // Normalize line endings
+        const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim().split('\n');
+        if (lines.length < 2) { alert('CSV appears empty.'); return; }
+
+        rawLines = lines;
+        headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+
+        // Check required columns
+        const required = ['hotelname', 'address', 'city', 'countryname'];
+        const missing = required.filter(r => !headers.map(h => h.toLowerCase()).includes(r));
+        if (missing.length > 0) {
+            alert(`Missing required columns: ${missing.join(', ')}`);
+            return;
+        }
+
+        // Parse rows
+        hotels = [];
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const values = splitCSVLine(lines[i]);
+            const obj = {};
+            headers.forEach((h, idx) => {
+                obj[h.toLowerCase()] = (values[idx] || '').trim().replace(/^"|"$/g, '');
+            });
+            if (obj.hotelname) hotels.push({ ...obj, _lineIndex: i });
+        }
+
+        // Show loaded info
+        document.getElementById('loadedCount').textContent = hotels.length;
+        document.getElementById('loadedFile').textContent = filename;
+        document.getElementById('loadedInfo').style.display = 'block';
+        document.getElementById('startBtn').disabled = false;
+
+        log(`Loaded ${hotels.length} hotels from ${filename}`, 'info');
+    }
+
+    function splitCSVLine(line) {
+        const values = [];
+        let inQuotes = false, current = '';
+        for (let char of line) {
+            if (char === '"') inQuotes = !inQuotes;
+            else if (char === ',' && !inQuotes) { values.push(current); current = ''; }
+            else current += char;
+        }
+        values.push(current);
+        return values;
+    }
+
+    // --- GEOCODING ---
+    async function startGeocoding() {
+        if (hotels.length === 0) { alert('Please load a CSV file first.'); return; }
+
+        isRunning = true;
+        shouldStop = false;
+        startTime = Date.now();
+        results = [];
+
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'inline-block';
+        document.getElementById('progressSection').style.display = 'block';
+        document.getElementById('downloadSection').style.display = 'none';
+        document.getElementById('statTotal').textContent = hotels.length;
+        document.getElementById('statRemaining').textContent = hotels.length;
+
+        log(`Starting geocoding for ${hotels.length} hotels...`, 'info');
+        log(`Rate: 1 request/second. Estimated time: ~${Math.ceil(hotels.length / 60)} minutes`, 'warn');
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < hotels.length; i++) {
+            if (shouldStop) {
+                log('⏹ Stopped by user.', 'warn');
+                break;
+            }
+
+            const hotel = hotels[i];
+            const query = `${hotel.hotelname} ${hotel.address}`;
+
+            try {
+                const coords = await geocode(query, hotel);
+                if (coords) {
+                    hotel.latitude = coords.lat;
+                    hotel.longitude = coords.lon;
+                    successCount++;
+                    log(`✅ [${i+1}/${hotels.length}] ${hotel.hotelname} → ${coords.lat}, ${coords.lon}`, 'success');
+                } else {
+                    // Fallback: try with just city + country
+                    const fallbackCoords = await geocode(`${hotel.city} ${hotel.countryname}`, hotel);
+                    if (fallbackCoords) {
+                        hotel.latitude = fallbackCoords.lat;
+                        hotel.longitude = fallbackCoords.lon;
+                        successCount++;
+                        log(`🔄 [${i+1}/${hotels.length}] ${hotel.hotelname} → city fallback used`, 'warn');
+                    } else {
+                        hotel.latitude = '';
+                        hotel.longitude = '';
+                        failCount++;
+                        log(`❌ [${i+1}/${hotels.length}] ${hotel.hotelname} → not found`, 'error');
+                    }
+                }
+            } catch (err) {
+                hotel.latitude = '';
+                hotel.longitude = '';
+                failCount++;
+                log(`❌ [${i+1}/${hotels.length}] Error: ${err.message}`, 'error');
+            }
+
+            results.push(hotel);
+
+            // Update UI
+            updateProgress(i + 1, hotels.length, successCount, failCount);
+
+            // Respect Nominatim rate limit: 1 request/second
+            // (geocode already does 1 call, fallback adds another if needed — wait 1s after each hotel)
+            await sleep(1100);
+        }
+
+        isRunning = false;
+        document.getElementById('stopBtn').style.display = 'none';
+        document.getElementById('startBtn').style.display = 'inline-block';
+        document.getElementById('startBtn').textContent = '🔄 Run Again';
+        document.getElementById('startBtn').disabled = false;
+
+        if (results.length > 0) {
+            document.getElementById('downloadSection').style.display = 'block';
+            log(`\n🎉 Done! ${successCount} found, ${failCount} not found.`, 'info');
+        }
+    }
+
+    async function geocode(query, hotel) {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=${getCountryCode(hotel.countryname)}`;
+        const response = await fetch(url, {
+            headers: { 'Accept-Language': 'en', 'User-Agent': 'HotelReservationGeocoder/1.0' }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (data && data.length > 0) {
+            return { lat: parseFloat(data[0].lat).toFixed(6), lon: parseFloat(data[0].lon).toFixed(6) };
+        }
+        return null;
+    }
+
+    // ISO country codes for better Nominatim accuracy
+    const COUNTRY_CODES = {
+        'austria': 'at', 'belgium': 'be', 'czech republic': 'cz', 'denmark': 'dk',
+        'finland': 'fi', 'france': 'fr', 'germany': 'de', 'greece': 'gr',
+        'hungary': 'hu', 'iceland': 'is', 'italy': 'it', 'luxembourg': 'lu',
+        'netherlands': 'nl', 'norway': 'no', 'poland': 'pl', 'portugal': 'pt',
+        'slovakia': 'sk', 'slovenia': 'si', 'spain': 'es', 'sweden': 'se',
+        'switzerland': 'ch', 'usa': 'us', 'canada': 'ca', 'australia': 'au',
+        'turkey': 'tr', 'morocco': 'ma', 'india': 'in', 'south africa': 'za'
+    };
+
+    function getCountryCode(countryName) {
+        return COUNTRY_CODES[(countryName || '').toLowerCase()] || '';
+    }
+
+    function stopGeocoding() {
+        shouldStop = true;
+        log('Stopping after current request...', 'warn');
+    }
+
+    // --- PROGRESS UI ---
+    function updateProgress(done, total, success, fail) {
+        const pct = Math.round((done / total) * 100);
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressPct').textContent = pct + '%';
+        document.getElementById('statSuccess').textContent = success;
+        document.getElementById('statFailed').textContent = fail;
+        document.getElementById('statRemaining').textContent = total - done;
+
+        // ETA
+        const elapsed = (Date.now() - startTime) / 1000;
+        const rate = done / elapsed;
+        const remaining = (total - done) / rate;
+        const mins = Math.floor(remaining / 60);
+        const secs = Math.floor(remaining % 60);
+        document.getElementById('etaText').textContent =
+            `Estimated time remaining: ${mins}m ${secs}s`;
+    }
+
+    function log(msg, type = 'info') {
+        const box = document.getElementById('logBox');
+        const line = document.createElement('div');
+        line.className = type;
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        box.appendChild(line);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    // --- DOWNLOAD ---
+    function downloadCSV() {
+        // Build new headers — add lat/lng if not already present
+        let newHeaders = [...headers];
+        if (!newHeaders.map(h => h.toLowerCase()).includes('latitude')) newHeaders.push('latitude');
+        if (!newHeaders.map(h => h.toLowerCase()).includes('longitude')) newHeaders.push('longitude');
+
+        const csvLines = [newHeaders.join(',')];
+
+        results.forEach(hotel => {
+            const row = newHeaders.map(h => {
+                const val = hotel[h.toLowerCase()] ?? '';
+                // Quote fields that contain commas or spaces
+                return val.toString().includes(',') ? `"${val}"` : val;
+            });
+            csvLines.push(row.join(','));
+        });
+
+        const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'hotels_datasheet_geocoded.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        log('CSV downloaded successfully!', 'success');
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+</script>
+</body>
+</html>
