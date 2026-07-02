@@ -231,26 +231,19 @@
         const address = hotel.address || '';
         const city = hotel.city || '';
         const country = hotel.countryname || '';
-
-        // Extract street part: remove postal code (digits) and country name from end
-        const streetOnly = address
-            .replace(new RegExp(country + '$', 'i'), '')  // remove country at end
-            .replace(new RegExp(city + '[^,]*$', 'i'), '') // remove city and after
-            .replace(/\d{4,6}/g, '')                       // remove postal codes
-            .trim().replace(/\s+/g, ' ');
-
-        // --- ATTEMPT 1: Full address without hotel name ---
+    
+        // --- ATTEMPT 1: Full address (best chance) ---
         const attempt1 = await nominatim(address, cc);
         if (attempt1) return { coords: attempt1, method: 'exact' };
         await sleep(1100);
-
-        // --- ATTEMPT 2: Street + City + Country (no postal code) ---
-        const attempt2Query = `${streetOnly} ${city} ${country}`.trim();
-        const attempt2 = await nominatim(attempt2Query, cc);
-        if (attempt2) return { coords: attempt2, method: 'exact' };
+    
+        // --- ATTEMPT 2: City + Country (broader match) ---
+        const cityQuery = `${city} ${country}`.trim();
+        const attempt2 = await nominatim(cityQuery, cc);
+        if (attempt2) return { coords: attempt2, method: 'fallback' };
         await sleep(1100);
-
-        // --- ATTEMPT 3: City + Country (city center fallback) ---
+    
+        // --- ATTEMPT 3: Hardcoded city center (if available) ---
         const cityKey = city.toLowerCase();
         if (CITY_COORDS[cityKey]) {
             return {
@@ -258,34 +251,43 @@
                 method: 'fallback'
             };
         }
-
-        // Last resort: Nominatim city search
-        const attempt3 = await nominatim(`${city} ${country}`, cc);
-        if (attempt3) return { coords: attempt3, method: 'fallback' };
-        await sleep(1100);
-
+    
+        // No result
         return null;
     }
 
-    async function nominatim(query, countryCode) {
-        try {
-            const cc = countryCode ? `&countrycodes=${countryCode}` : '';
-            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1${cc}`;
-            const res = await fetch(url, {
-                headers: { 'Accept-Language': 'en', 'User-Agent': 'HotelGeocoderTool/2.0' }
-            });
-            if (!res.ok) return null;
-            const data = await res.json();
-            if (data && data.length > 0) {
-                return {
-                    lat: parseFloat(data[0].lat).toFixed(6),
-                    lon: parseFloat(data[0].lon).toFixed(6)
-                };
+        async function nominatim(query, countryCode, retries = 3) {
+        for (let attempt = 0; attempt < retries; attempt++) {
+            try {
+                const cc = countryCode ? `&countrycodes=${countryCode}` : '';
+                const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1${cc}`;
+                const res = await fetch(url, {
+                    headers: { 'Accept-Language': 'en', 'User-Agent': 'HotelGeocoderTool/2.0' }
+                });
+    
+                // If rate‑limited, wait and retry
+                if (res.status === 429) {
+                    const waitTime = 2000 * (attempt + 1); // 2s, 4s, 6s
+                    console.warn(`Rate limited, waiting ${waitTime}ms...`);
+                    await sleep(waitTime);
+                    continue;
+                }
+    
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    return {
+                        lat: parseFloat(data[0].lat).toFixed(6),
+                        lon: parseFloat(data[0].lon).toFixed(6)
+                    };
+                }
+                return null;
+            } catch (e) {
+                // If it's the last attempt, return null; otherwise continue
+                if (attempt === retries - 1) return null;
             }
-            return null;
-        } catch (e) {
-            return null;
         }
+        return null;
     }
 
     async function startGeocoding() {
