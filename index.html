@@ -343,7 +343,7 @@
             );
 
             //  EDIT THESE to match your CSV columns
-            const neededColumns = ['countryname', 'city', 'hotelname', 'address', 'phone', 'rating', 'hoteltype'];
+            const neededColumns = ['countryname', 'city', 'hotelname', 'address', 'phone', 'rating', 'hoteltype', 'latitude', 'longitude'];
             
             const parsedData = [];
             
@@ -389,6 +389,9 @@
                     h.ratingNum = parseInt(h.rating) || 0;
                     // Generate stars string
                     h.starsStr = '★'.repeat(h.ratingNum);
+					// ✅ Parse coordinates as floats
+				    h.lat = parseFloat(h.latitude) || null;
+				    h.long = parseFloat(h.longitude) || null;
                 });
 
                 console.log(`✅ Loaded ${allHotels.length} hotels`);
