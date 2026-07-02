@@ -131,6 +131,8 @@
         }
     </style>
     <script src="hotel_images.js"></script>
+	<!-- QR Code Generator -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -303,6 +305,20 @@
 			</div>
             <div class="modal-footer">
                 <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+				<!-- PDF Style Selector -->
+				<div class="form-group" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+				    <label style="font-weight: 600; margin-bottom: 8px; display: block;">📄 PDF Style</label>
+				    <div style="display: flex; gap: 15px;">
+				        <label style="flex: 1; cursor: pointer;">
+				            <input type="radio" name="pdfStyle" value="modelA" checked style="margin-right: 5px;">
+				            <span>Classic (Model A)</span>
+				        </label>
+				        <label style="flex: 1; cursor: pointer;">
+				            <input type="radio" name="pdfStyle" value="modelB" style="margin-right: 5px;">
+				            <span>Modern (Model B)</span>
+				        </label>
+				    </div>
+				</div>
                 <button class="confirm-btn" onclick="confirmBooking()">Confirm & Download PDF</button>
             </div>
         </div>
@@ -511,6 +527,63 @@
                 calculateNights(document.getElementById('modalCheckIn').value, document.getElementById('modalCheckOut').value);
             });
         });
+
+		// 🔐 Generate encrypted-style QR data for hotel scanners
+		function generateQRData(reservationNumber, hotelName, guestName, checkIn, checkOut, rooms, guests) {
+		    // Generate a UUID for bookingId
+		    const bookingId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+		        const r = Math.random() * 16 | 0;
+		        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+		        return v.toString(16);
+		    });
+		    
+		    // Format exactly as you specified (with quotes for special scanners)
+		    const qrData = {
+		        "bookingId": bookingId,
+		        "confirmationNumber": reservationNumber,
+		        "hotel": hotelName,
+		        "guest": guestName,
+		        "checkin": checkIn,
+		        "checkout": checkOut,
+		        "rooms": rooms,
+		        "guests": guests
+		    };
+		    
+		    // Convert to JSON string (this is what gets encoded in QR)
+		    return JSON.stringify(qrData);
+		}
+
+		// 🗺️ Fetch map image from OpenStreetMap (free, no API key)
+		async function fetchMapImage(lat, long) {
+		    return new Promise((resolve) => {
+		        if (!lat || !long) {
+		            resolve(null); // No coordinates
+		            return;
+		        }
+		        
+		        const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${long}&zoom=15&size=512x512&maptype=mapnik&markers=${lat},${long},pushpin`;
+		        
+		        const img = new Image();
+		        img.crossOrigin = "Anonymous";
+		        img.src = mapUrl;
+		        
+		        img.onload = () => {
+		            // Convert to canvas for jsPDF
+		            const canvas = document.createElement("canvas");
+		            canvas.width = img.width;
+		            canvas.height = img.height;
+		            const ctx = canvas.getContext("2d");
+		            ctx.drawImage(img, 0, 0);
+		            const imageData = canvas.toDataURL("image/png");
+		            resolve(imageData);
+		        };
+		        
+		        img.onerror = () => {
+		            console.warn("Map failed to load, using placeholder");
+		            resolve(null);
+		        };
+		    });
+		}
 
         // --- 6. PDF GENERATION (Professional Layout) ---
 		async function confirmBooking() {
@@ -739,8 +812,312 @@
 		    doc.text("Please present this confirmation at check-in", 105, 282, null, null, 'center');
 		    doc.text("© 2023 Hotel Reservation System", 105, 286, null, null, 'center');
 		
-		    doc.save(`Reservation_${name.replace(/\s+/g, '_')}_${currentHotel.city}.pdf`);
-		    closeModal();
+		    // Check which PDF style is selected
+			const pdfStyle = document.querySelector('input[name="pdfStyle"]:checked')?.value || 'modelA';
+			
+			if (pdfStyle === 'modelB') {
+			    // Generate Model B (new modern layout with map & QR)
+			    await generateModelBPDF(
+			        reservationNumber,
+			        name,
+			        document.getElementById('modalCheckIn').value,
+			        document.getElementById('modalCheckOut').value,
+			        currentHotel,
+			        document.getElementById('modalRooms').value,
+			        selectedRooms.reduce((sum, r) => sum + parseInt(r.guests), 0),
+			        agencyName,
+			        agencyAddress,
+			        agencyContact,
+			        selectedRooms
+			    );
+			} else {
+			    // Generate Model A (your existing classic layout - already generated above)
+			    doc.save(`hotel-${reservationNumber}.pdf`);
+			}
+			
+			closeModal(); // ✅ Called ONCE at the end
+		}
+		// 🎨 MODEL B: Modern PDF Layout with Map & QR Code
+		async function generateModelBPDF(reservationNumber, guestName, checkIn, checkOut, hotel, rooms, guests, agencyName, agencyAddress, agencyContact, selectedRooms) {
+		    const { jsPDF } = window.jspdf;
+		    const doc = new jsPDF();
+		    
+		    // Calculate nights
+		    const nights = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
+		    
+		    // Generate QR data
+		    const qrDataString = generateQRData(reservationNumber, hotel.hotelname, guestName, checkIn, checkOut, rooms, guests);
+		    
+		    // Fetch map image
+		    const mapImageData = await fetchMapImage(hotel.lat, hotel.long);
+		    
+		    // === HEADER ===
+		    doc.setFillColor(0, 53, 128); // #003580
+		    doc.rect(0, 0, 210, 40, 'F');
+		    
+		    // Logo (if you want to add it)
+		    // doc.addImage(logo, 'SVG', 10, 10, 20, 20);
+		    
+		    doc.setTextColor(255, 255, 255);
+		    doc.setFont("helvetica", "bold");
+		    doc.setFontSize(22);
+		    doc.text("Booking Confirmed", 105, 20, null, null, 'center');
+		    doc.setFontSize(11);
+		    doc.setFont("helvetica", "normal");
+		    doc.text("Your reservation voucher is ready.", 105, 28, null, null, 'center');
+		    
+		    // Confirmation Number (top right)
+		    doc.setFontSize(9);
+		    doc.text("CONFIRMATION #", 180, 12, null, null, 'right');
+		    doc.setFont("helvetica", "bold");
+		    doc.setFontSize(12);
+		    doc.text(reservationNumber, 180, 20, null, null, 'right');
+		    
+		    // Hotel Name & Rating
+		    doc.setTextColor(0, 0, 0);
+		    doc.setFontSize(18);
+		    doc.setFont("helvetica", "bold");
+		    doc.text(hotel.hotelname, 15, 55);
+		    
+		    // Stars
+		    const stars = '★'.repeat(hotel.ratingNum || 4);
+		    doc.setTextColor(254, 187, 2); // Gold
+		    doc.setFontSize(12);
+		    doc.text(stars, 15, 62);
+		    
+		    // === INFO BOXES (Check-in, Check-out, Duration, Guests) ===
+		    doc.setDrawColor(220, 220, 220);
+		    doc.setLineWidth(0.5);
+		    
+		    // Box 1: Check-in
+		    doc.rect(15, 70, 45, 25, 'D');
+		    doc.setFontSize(8);
+		    doc.setTextColor(100, 100, 100);
+		    doc.text("CHECK-IN", 37.5, 76, null, null, 'center');
+		    doc.setFont("helvetica", "bold");
+		    doc.setFontSize(11);
+		    doc.setTextColor(0, 0, 0);
+		    doc.text(new Date(checkIn).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }), 37.5, 83, null, null, 'center');
+		    doc.setFontSize(8);
+		    doc.text("From 3:00 PM", 37.5, 88, null, null, 'center');
+		    
+		    // Box 2: Check-out
+		    doc.rect(65, 70, 45, 25, 'D');
+		    doc.setFontSize(8);
+		    doc.setTextColor(100, 100, 100);
+		    doc.text("CHECK-OUT", 87.5, 76, null, null, 'center');
+		    doc.setFont("helvetica", "bold");
+		    doc.setFontSize(11);
+		    doc.setTextColor(0, 0, 0);
+		    doc.text(new Date(checkOut).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }), 87.5, 83, null, null, 'center');
+		    doc.setFontSize(8);
+		    doc.text("Until 11:00 AM", 87.5, 88, null, null, 'center');
+		    
+		    // Box 3: Duration
+		    doc.rect(115, 70, 40, 25, 'D');
+		    doc.setFontSize(8);
+		    doc.setTextColor(100, 100, 100);
+		    doc.text("DURATION", 135, 76, null, null, 'center');
+		    doc.setFont("helvetica", "bold");
+		    doc.setFontSize(11);
+		    doc.setTextColor(0, 0, 0);
+		    doc.text(`${nights} Nights`, 135, 83, null, null, 'center');
+		    
+		    // Box 4: Guests
+		    doc.rect(160, 70, 35, 25, 'D');
+		    doc.setFontSize(8);
+		    doc.setTextColor(100, 100, 100);
+		    doc.text("GUESTS", 177.5, 76, null, null, 'center');
+		    doc.setFont("helvetica", "bold");
+		    doc.setFontSize(11);
+		    doc.setTextColor(0, 0, 0);
+		    doc.text(`${guests} Guest${guests > 1 ? 's' : ''}`, 177.5, 83, null, null, 'center');
+		    
+		    // === TWO COLUMN LAYOUT ===
+		    let y = 105;
+		    
+		    // LEFT COLUMN: Guest Details & Accommodation
+		    doc.setFontSize(12);
+		    doc.setFont("helvetica", "bold");
+		    doc.setTextColor(0, 53, 128);
+		    doc.text("👤 Guest Details", 15, y);
+		    
+		    doc.setFont("helvetica", "normal");
+		    doc.setTextColor(0, 0, 0);
+		    doc.setFontSize(11);
+		    doc.text(guestName, 15, y + 8);
+		    
+		    // Phone (if available)
+		    // doc.text(phone, 15, y + 15);
+		    
+		    // Accommodation Box
+		    y += 30;
+		    doc.setFillColor(248, 249, 250);
+		    doc.roundedRect(15, y, 90, 40, 3, 3, 'F');
+		    doc.setFont("helvetica", "bold");
+		    doc.setTextColor(0, 53, 128);
+		    doc.text("🛏️ Accommodation", 20, y + 8);
+		    
+		    doc.setFont("helvetica", "normal");
+		    doc.setTextColor(60, 60, 60);
+		    doc.setFontSize(10);
+		    
+		    // Room details
+		    if (selectedRooms && selectedRooms.length > 0) {
+		        const roomTypes = {
+		            standard_double: "Standard Double Room",
+		            standard_twin: "Standard Twin Room",
+		            standard_triple: "Standard Triple Room",
+		            bed_mixed_dormitory_room: "Dormitory Room"
+		        };
+		        
+		        let roomY = y + 16;
+		        selectedRooms.forEach((room, i) => {
+		            const roomName = roomTypes[room.type] || "Standard Room";
+		            doc.text(`${i + 1}. ${roomName} (${room.guests} guests)`, 20, roomY);
+		            roomY += 6;
+		        });
+		    } else {
+		        doc.text("Standard Room", 20, y + 16);
+		        doc.text("Comfortable standard room with basic amenities", 20, y + 22);
+		        doc.text(`Rooms: ${rooms} | Max Guests/Room: ${guests}`, 20, y + 28);
+		    }
+		    
+		    // RIGHT COLUMN: Location & Contact + QR + Map
+		    y = 105;
+		    doc.setFontSize(12);
+		    doc.setFont("helvetica", "bold");
+		    doc.setTextColor(0, 53, 128);
+		    doc.text("📍 Location & Contact", 120, y);
+		    
+		    doc.setFont("helvetica", "normal");
+		    doc.setTextColor(60, 60, 60);
+		    doc.setFontSize(9);
+		    doc.text(hotel.address, 120, y + 8);
+		    doc.text(hotel.city + ", " + (hotel.countryname || ""), 120, y + 14);
+		    doc.text("📞 " + hotel.phone, 120, y + 20);
+		    
+		    // QR Code (generate on canvas first)
+		    const qrCanvas = document.createElement("canvas");
+		    new QRCode(qrCanvas, {
+		        text: qrDataString,
+		        width: 80,
+		        height: 80,
+		        colorDark: "#000000",
+		        colorLight: "#ffffff",
+		        correctLevel: QRCode.CorrectLevel.M
+		    });
+		    
+		    const qrDataUrl = qrCanvas.toDataURL("image/png");
+		    doc.addImage(qrDataUrl, "PNG", 165, y + 28, 30, 30);
+		    doc.setFontSize(7);
+		    doc.setTextColor(100, 100, 100);
+		    doc.text("SCAN FOR DETAILS", 180, y + 62, null, null, 'center');
+		    
+		    // Map Image (if available)
+		    y += 70;
+		    doc.setFontSize(12);
+		    doc.setFont("helvetica", "bold");
+		    doc.setTextColor(0, 53, 128);
+		    doc.text("🗺️ Hotel Location", 15, y);
+		    
+		    if (mapImageData) {
+		        doc.addImage(mapImageData, "PNG", 15, y + 5, 90, 60);
+		    } else {
+		        doc.setFillColor(240, 240, 240);
+		        doc.rect(15, y + 5, 90, 60, 'F');
+		        doc.setTextColor(150, 150, 150);
+		        doc.setFontSize(10);
+		        doc.text("Map not available", 60, y + 35, null, null, 'center');
+		    }
+		    
+		    // Amenities
+		    doc.setFontSize(12);
+		    doc.setFont("helvetica", "bold");
+		    doc.setTextColor(0, 53, 128);
+		    doc.text("Amenities", 120, y);
+		    
+		    doc.setFont("helvetica", "normal");
+		    doc.setTextColor(60, 60, 60);
+		    doc.setFontSize(9);
+		    doc.text("📶 WiFi", 120, y + 8);
+		    doc.text("🍽️ Restaurant", 155, y + 8);
+		    doc.text("🛎️ Room Service", 120, y + 15);
+		    doc.text("❄️ Air Conditioning", 155, y + 15);
+		    
+		    // === IMPORTANT INFORMATION (3 Boxes) ===
+		    y += 75;
+		    
+		    // Box 1: Check-in Policy (Green)
+		    doc.setFillColor(232, 245, 233);
+		    doc.roundedRect(15, y, 60, 30, 2, 2, 'F');
+		    doc.setFont("helvetica", "bold");
+		    doc.setTextColor(28, 111, 42);
+		    doc.text("✓ Check-in Policy", 20, y + 7);
+		    doc.setFont("helvetica", "normal");
+		    doc.setFontSize(7);
+		    doc.setTextColor(40, 80, 40);
+		    doc.text("Present this voucher and valid", 18, y + 13);
+		    doc.text("photo ID at check-in.", 18, y + 17);
+		    doc.text("Reservations are guaranteed.", 18, y + 21);
+		    
+		    // Box 2: Cancellation (Yellow/Orange)
+		    doc.setFillColor(255, 249, 225);
+		    doc.roundedRect(80, y, 60, 30, 2, 2, 'F');
+		    doc.setFont("helvetica", "bold");
+		    doc.setTextColor(230, 143, 0);
+		    doc.text("↻ Cancellation", 85, y + 7);
+		    doc.setFont("helvetica", "normal");
+		    doc.setFontSize(7);
+		    doc.setTextColor(180, 120, 0);
+		    doc.text("Free cancellation until", 83, y + 13);
+		    doc.text("48 hours before check-in.", 83, y + 17);
+		    
+		    // Box 3: Please Note (Red)
+		    doc.setFillColor(253, 237, 237);
+		    doc.roundedRect(145, y, 50, 30, 2, 2, 'F');
+		    doc.setFont("helvetica", "bold");
+		    doc.setTextColor(198, 40, 40);
+		    doc.text("⚠ Please Note", 150, y + 7);
+		    doc.setFont("helvetica", "normal");
+		    doc.setFontSize(7);
+		    doc.setTextColor(150, 40, 40);
+		    doc.text("Modifications subject to", 148, y + 13);
+		    doc.text("availability. Contact", 148, y + 17);
+		    doc.text("property directly.", 148, y + 21);
+		    
+		    // === FOOTER ===
+		    doc.setFillColor(0, 53, 128);
+		    doc.rect(0, 280, 210, 10, 'F');
+		    doc.setTextColor(255, 255, 255);
+		    doc.setFontSize(8);
+		    doc.text("This voucher is computer generated and does not require a signature. For assistance, please contact the property directly.", 105, 286, null, null, 'center');
+		    
+		    // Agency Footer (if provided)
+		    if (agencyName || agencyAddress || agencyContact) {
+		        doc.setTextColor(0, 0, 0);
+		        doc.setFontSize(8);
+		        doc.setFont("helvetica", "normal");
+		        let footerY = 250;
+		        doc.line(15, footerY, 195, footerY);
+		        if (agencyName) {
+		            doc.setFont("helvetica", "bold");
+		            doc.text(agencyName, 15, footerY + 5);
+		            doc.setFont("helvetica", "normal");
+		        }
+		        if (agencyAddress) {
+		            const lines = agencyAddress.split(',');
+		            lines.forEach((line, i) => {
+		                doc.text(line.trim(), 15, footerY + 9 + (i * 4));
+		            });
+		        }
+		        if (agencyContact) {
+		            doc.text("Phone: " + agencyContact, 15, footerY + 20);
+		        }
+		    }
+		    
+		    // Save PDF
+		    doc.save(`Reservation_${guestName.replace(/\s+/g, '_')}_${hotel.city}_ModelB.pdf`);
 		}
 		// Initialize
         loadHotels();
