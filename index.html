@@ -819,14 +819,27 @@
 			
 			if (isModelB) {
 			    console.log("🚀 Generating Model B PDF...");
+			    
+			    // ✅ Cache all values FIRST (before async call)
+			    const checkInVal = document.getElementById('modalCheckIn')?.value || '';
+			    const checkOutVal = document.getElementById('modalCheckOut')?.value || '';
+			    const roomsVal = document.getElementById('modalRooms')?.value || '1';
+			    const totalGuests = selectedRooms.reduce((sum, r) => sum + parseInt(r.guests || 1), 0);
+			    
+			    // Validate
+			    if (!checkInVal || !checkOutVal) {
+			        alert("Please select valid check-in/check-out dates.");
+			        return;
+			    }
+			    
 			    await generateModelBPDF(
 			        reservationNumber,
 			        name,
-			        document.getElementById('modalCheckIn').value,
-			        document.getElementById('modalCheckOut').value,
+			        checkInVal,           // ✅ Use cached value
+			        checkOutVal,          // ✅ Use cached value
 			        currentHotel,
-			        document.getElementById('modalRooms').value,
-			        selectedRooms.reduce((sum, r) => sum + parseInt(r.guests), 0),
+			        roomsVal,             // ✅ Use cached value
+			        totalGuests,          // ✅ Use cached value
 			        agencyName,
 			        agencyAddress,
 			        agencyContact,
@@ -834,12 +847,11 @@
 			    );
 			} else {
 			    console.log("📄 Generating Model A PDF...");
-			    // Your existing Model A save logic
 			    doc.save(`hotel-${reservationNumber}.pdf`);
 			}
 			
-			closeModal(); 
-		}
+			closeModal();
+			
 		// 🎨 MODEL B: Modern PDF Layout with Map & QR Code
 		async function generateModelBPDF(reservationNumber, guestName, checkIn, checkOut, hotel, rooms, guests, agencyName, agencyAddress, agencyContact, selectedRooms) {
 		    const { jsPDF } = window.jspdf;
