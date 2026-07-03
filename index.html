@@ -721,28 +721,22 @@
 		    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 		    const cancelDateFormatted = `${cancelDeadline.getDate()} ${months[cancelDeadline.getMonth()]} ${cancelDeadline.getFullYear()} at ${cancelDeadline.getHours().toString().padStart(2,'0')}:${cancelDeadline.getMinutes().toString().padStart(2,'0')}`;
 		
-		    // === THIN BLUE TOP BAR ===
-			doc.setFillColor(0, 53, 128); // #003580
-			doc.rect(0, 0, 210, 30, 'F');
+			// === HEADER (Original Model A - Gray Rounded) ===
+			doc.setFillColor(242, 242, 242); // Light gray background
+			doc.roundedRect(10, 10, 190, 45, 3, 3, 'F'); // Rounded corners
 			
-			doc.setTextColor(255, 255, 255);
 			doc.setFont("helvetica", "bold");
 			doc.setFontSize(18);
-			doc.text("Booking Confirmed", 15, 18);
+			doc.setTextColor(0, 0, 0); // Black text
+			doc.text("Booking Confirmation", 105, 25, null, null, 'center');
 			
 			doc.setFont("helvetica", "normal");
-			doc.setFontSize(9);
-			doc.text("Your reservation voucher is ready.", 15, 24);
-			
-			// Top Right: Confirmation & Booked Date
-			const bookedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-			doc.setFontSize(7);
-			doc.text("CONFIRMATION #", 195, 10, null, null, 'right');
+			doc.setFontSize(14);
 			doc.setFont("helvetica", "bold");
-			doc.setFontSize(9);
-			doc.text(reservationNumber, 195, 15, null, null, 'right');
-			doc.setFont("helvetica", "normal");
-			doc.text(`Booked on: ${bookedDate}`, 195, 21, null, null, 'right');
+			doc.text(`Thank you ${name}`, 15, 35); // Uses 'name' variable from your code
+			
+			doc.setFontSize(12);
+			doc.text("Congratulations, Your booking is now confirmed", 15, 45);
 		
 		    // === RESERVATION TABLE ===
 		    doc.setFontSize(14); doc.setFont("helvetica", "bolditalic");
