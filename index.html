@@ -305,16 +305,16 @@
 			</div>
             <div class="modal-footer">
                 <button class="cancel-btn" onclick="closeModal()">Cancel</button>
-				<!-- PDF Style Selector -->
+				<!-- PDF Style Selector (ID-Based) -->
 				<div class="form-group" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
 				    <label style="font-weight: 600; margin-bottom: 8px; display: block;">📄 PDF Style</label>
 				    <div style="display: flex; gap: 15px;">
 				        <label style="flex: 1; cursor: pointer;">
-				            <input type="radio" name="pdfStyle" value="modelA" checked style="margin-right: 5px;">
+				            <input type="radio" id="pdfModelA" name="pdfStyle" value="modelA" checked style="margin-right: 5px;">
 				            <span>Classic (Model A)</span>
 				        </label>
 				        <label style="flex: 1; cursor: pointer;">
-				            <input type="radio" name="pdfStyle" value="modelB" style="margin-right: 5px;">
+				            <input type="radio" id="pdfModelB" name="pdfStyle" value="modelB" style="margin-right: 5px;">
 				            <span>Modern (Model B)</span>
 				        </label>
 				    </div>
@@ -813,12 +813,12 @@
 		    doc.text("© 2023 Hotel Reservation System", 105, 286, null, null, 'center');
 		
 		    // Check which PDF style is selected
-			// ✅ SAFE: Robust check for radio buttons
-			const pdfStyleRadio = document.querySelector('input[name="pdfStyle"]:checked');
-			const pdfStyle = pdfStyleRadio ? pdfStyleRadio.value : 'modelA';
+			// ✅ SAFE: Check by ID (100% reliable)
+			const modelB_Radio = document.getElementById('pdfModelB');
+			const isModelB = modelB_Radio && modelB_Radio.checked;
 			
-			if (pdfStyle === 'modelB') {
-			    // Generate Model B (new modern layout with map & QR)
+			if (isModelB) {
+			    console.log("🚀 Generating Model B PDF...");
 			    await generateModelBPDF(
 			        reservationNumber,
 			        name,
@@ -833,11 +833,12 @@
 			        selectedRooms
 			    );
 			} else {
-			    // Generate Model A (your existing classic layout - already generated above)
+			    console.log("📄 Generating Model A PDF...");
+			    // Your existing Model A save logic
 			    doc.save(`hotel-${reservationNumber}.pdf`);
 			}
 			
-			closeModal(); // ✅ Called ONCE at the end
+			closeModal(); 
 		}
 		// 🎨 MODEL B: Modern PDF Layout with Map & QR Code
 		async function generateModelBPDF(reservationNumber, guestName, checkIn, checkOut, hotel, rooms, guests, agencyName, agencyAddress, agencyContact, selectedRooms) {
