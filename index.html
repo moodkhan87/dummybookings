@@ -721,15 +721,28 @@
 		    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 		    const cancelDateFormatted = `${cancelDeadline.getDate()} ${months[cancelDeadline.getMonth()]} ${cancelDeadline.getFullYear()} at ${cancelDeadline.getHours().toString().padStart(2,'0')}:${cancelDeadline.getMinutes().toString().padStart(2,'0')}`;
 		
-		    // === HEADER ===
-		    doc.setFillColor(242, 242, 242);
-		    doc.roundedRect(10, 10, 190, 45, 3, 3, 'F');
-		    doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(0, 0, 0);
-		    doc.text("Booking Confirmation", 105, 25, null, null, 'center');
-		    doc.setFont("helvetica", "normal"); doc.setFontSize(14); doc.setFont("helvetica", "bold");
-		    doc.text(`Thank you ${name}`, 15, 35);
-		    doc.setFontSize(12);
-		    doc.text("Congratulations, Your booking is now confirmed", 15, 45);
+		    // === THIN BLUE TOP BAR ===
+			doc.setFillColor(0, 53, 128); // #003580
+			doc.rect(0, 0, 210, 30, 'F');
+			
+			doc.setTextColor(255, 255, 255);
+			doc.setFont("helvetica", "bold");
+			doc.setFontSize(18);
+			doc.text("Booking Confirmed", 15, 18);
+			
+			doc.setFont("helvetica", "normal");
+			doc.setFontSize(9);
+			doc.text("Your reservation voucher is ready.", 15, 24);
+			
+			// Top Right: Confirmation & Booked Date
+			const bookedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+			doc.setFontSize(7);
+			doc.text("CONFIRMATION #", 195, 10, null, null, 'right');
+			doc.setFont("helvetica", "bold");
+			doc.setFontSize(9);
+			doc.text(reservationNumber, 195, 15, null, null, 'right');
+			doc.setFont("helvetica", "normal");
+			doc.text(`Booked on: ${bookedDate}`, 195, 21, null, null, 'right');
 		
 		    // === RESERVATION TABLE ===
 		    doc.setFontSize(14); doc.setFont("helvetica", "bolditalic");
@@ -1022,50 +1035,36 @@
 		    doc.setDrawColor(220, 220, 220);
 		    doc.setLineWidth(0.5);
 		    
-		    // Box 1: Check-in
-		    doc.rect(15, 70, 45, 25, 'D');
-		    doc.setFontSize(8);
-		    doc.setTextColor(100, 100, 100);
-		    doc.text("CHECK-IN", 37.5, 76, null, null, 'center');
-		    doc.setFont("helvetica", "bold");
-		    doc.setFontSize(11);
-		    doc.setTextColor(0, 0, 0);
-		    doc.text(new Date(checkIn).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }), 37.5, 83, null, null, 'center');
-		    doc.setFontSize(8);
-		    doc.text("From 3:00 PM", 37.5, 88, null, null, 'center');
-		    
-		    // Box 2: Check-out
-		    doc.rect(65, 70, 45, 25, 'D');
-		    doc.setFontSize(8);
-		    doc.setTextColor(100, 100, 100);
-		    doc.text("CHECK-OUT", 87.5, 76, null, null, 'center');
-		    doc.setFont("helvetica", "bold");
-		    doc.setFontSize(11);
-		    doc.setTextColor(0, 0, 0);
-		    doc.text(new Date(checkOut).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }), 87.5, 83, null, null, 'center');
-		    doc.setFontSize(8);
-		    doc.text("Until 11:00 AM", 87.5, 88, null, null, 'center');
-		    
-		    // Box 3: Duration
-		    doc.rect(115, 70, 40, 25, 'D');
-		    doc.setFontSize(8);
-		    doc.setTextColor(100, 100, 100);
-		    doc.text("DURATION", 135, 76, null, null, 'center');
-		    doc.setFont("helvetica", "bold");
-		    doc.setFontSize(11);
-		    doc.setTextColor(0, 0, 0);
-		    doc.text(`${nights} Nights`, 135, 83, null, null, 'center');
-		    
-		    // Box 4: Guests
-		    doc.rect(160, 70, 35, 25, 'D');
-		    doc.setFontSize(8);
-		    doc.setTextColor(100, 100, 100);
-		    doc.text("GUESTS", 177.5, 76, null, null, 'center');
-		    doc.setFont("helvetica", "bold");
-		    doc.setFontSize(11);
-		    doc.setTextColor(0, 0, 0);
-		    doc.text(`${guests} Guest${guests > 1 ? 's' : ''}`, 177.5, 83, null, null, 'center');
-		    
+		    // === 4-COLUMN INFO BOXES ===
+			const boxY = 42;
+			const boxH = 26;
+			const boxW = 48;
+			const gap = 4;
+			const startX = 15;
+			
+			const drawInfoBox = (title, value, sub, x) => {
+			    doc.setDrawColor(200, 200, 200);
+			    doc.rect(x, boxY, boxW, boxH);
+			    doc.setFontSize(7);
+			    doc.setTextColor(110, 110, 110);
+			    doc.text(title, x + boxW/2, boxY + 7, null, null, 'center');
+			    doc.setFont("helvetica", "bold");
+			    doc.setFontSize(10);
+			    doc.setTextColor(0, 0, 0);
+			    doc.text(value, x + boxW/2, boxY + 14, null, null, 'center');
+			    if (sub) {
+			        doc.setFont("helvetica", "normal");
+			        doc.setFontSize(7);
+			        doc.setTextColor(90, 90, 90);
+			        doc.text(sub, x + boxW/2, boxY + 20, null, null, 'center');
+			    }
+			};
+			
+			drawInfoBox("CHECK-IN", new Date(checkIn).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }), "From 3:00 PM", startX);
+			drawInfoBox("CHECK-OUT", new Date(checkOut).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }), "Until 11:00 AM", startX + boxW + gap);
+			drawInfoBox("DURATION", `${nights} Nights`, null, startX + (boxW + gap) * 2);
+			drawInfoBox("GUESTS", `${guests} Guest${guests > 1 ? 's' : ''}`, null, startX + (boxW + gap) * 3);
+					    
 		    // === TWO COLUMN LAYOUT ===
 		    let y = 105;
 		    
@@ -1093,21 +1092,24 @@
 		    // Phone (if available)
 		    // doc.text(phone, 15, y + 15);
 		    
-		    // Accommodation Box
-		    y += 30;
-		    doc.setFillColor(248, 249, 250);
-		    doc.roundedRect(15, y, 90, 40, 3, 3, 'F');
-		    doc.setFont("helvetica", "bold");
-		    doc.setTextColor(0, 53, 128);
-		    // Accommodation + Real Bed Icon
-			doc.addImage(bedIcon, 'PNG', 20, y + 2, ICON_SIZE, ICON_SIZE);
+			// === ACCOMMODATION BOX ===
+			let accY = 78; // Adjust to sit below info boxes
+			doc.setFillColor(248, 249, 250); // #F8F9FA
+			doc.roundedRect(15, accY, 90, 48, 2, 2, 'F');
+			
+			// Bed Icon
+			doc.addImage(bedIcon, 'PNG', 22, accY + 8, 12, 12);
 			doc.setFont("helvetica", "bold");
-			doc.setTextColor(0, 53, 128); // #003580
-			doc.text("Accommodation", 20 + ICON_SIZE + 4, y + 8);
-		    
-		    doc.setFont("helvetica", "normal");
-		    doc.setTextColor(60, 60, 60);
-		    doc.setFontSize(10);
+			doc.setFontSize(10);
+			doc.setTextColor(0, 53, 128);
+			doc.text("Accommodation", 38, accY + 12);
+			
+			doc.setFont("helvetica", "normal");
+			doc.setTextColor(60, 60, 60);
+			doc.setFontSize(8);
+			doc.text("Standard Room", 22, accY + 20);
+			doc.text("Comfortable standard room with basic amenities", 22, accY + 25);
+			doc.text(`Rooms: ${rooms} | Max Guests/Room: ${guests}`, 22, accY + 30);
 		    
 		    // Room details
 		    if (selectedRooms && selectedRooms.length > 0) {
@@ -1322,12 +1324,12 @@
 			doc.text("availability. Contact", 148, y + 17);
 			doc.text("property directly.", 148, y + 21);
 		    
-		    // === FOOTER ===
-		    doc.setFillColor(0, 53, 128);
-		    doc.rect(0, 280, 210, 10, 'F');
-		    doc.setTextColor(255, 255, 255);
-		    doc.setFontSize(8);
-		    doc.text("This voucher is computer generated and does not require a signature. For assistance, please contact the property directly.", 105, 286, null, null, 'center');
+			// === THIN BLUE FOOTER ===
+			doc.setFillColor(0, 53, 128);
+			doc.rect(0, 282, 210, 8, 'F');
+			doc.setTextColor(255, 255, 255);
+			doc.setFontSize(6);
+			doc.text("This voucher is computer generated and does not require a signature. For assistance, please contact the property directly.", 105, 286, null, null, 'center');
 		    
 		    // Agency Footer (if provided)
 		    if (agencyName || agencyAddress || agencyContact) {
