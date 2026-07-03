@@ -1013,22 +1013,49 @@
 		    doc.text(hotel.city + ", " + (hotel.countryname || ""), 120, y + 14);
 		    doc.text("📞 " + hotel.phone, 120, y + 20);
 		    
-		    // QR Code (generate on canvas first)
-		    const qrCanvas = document.createElement("canvas");
-		    new QRCode(qrCanvas, {
-		        text: qrDataString,
-		        width: 80,
-		        height: 80,
-		        colorDark: "#000000",
-		        colorLight: "#ffffff",
-		        correctLevel: QRCode.CorrectLevel.M
-		    });
-		    
-		    const qrDataUrl = qrCanvas.toDataURL("image/png");
-		    doc.addImage(qrDataUrl, "PNG", 165, y + 28, 30, 30);
-		    doc.setFontSize(7);
-		    doc.setTextColor(100, 100, 100);
-		    doc.text("SCAN FOR DETAILS", 180, y + 62, null, null, 'center');
+			// 1. Create a temporary hidden container
+			const tempContainer = document.createElement("div");
+			tempContainer.style.display = "none";
+			document.body.appendChild(tempContainer);
+			
+			// 2. Generate QR Code (Safe & Async)
+			await new Promise((resolve) => {
+			    try {
+			        new QRCode(tempContainer, {
+			            text: qrDataString,
+			            width: 100,
+			            height: 100,
+			            colorDark: "#000000",
+			            colorLight: "#ffffff",
+			            correctLevel: QRCode.CorrectLevel.M
+			        });
+			
+			        const canvas = tempContainer.querySelector("canvas");
+			        if (canvas) {
+			            const qrDataUrl = canvas.toDataURL("image/png");
+			            doc.addImage(qrDataUrl, "PNG", 165, y + 28, 30, 30);
+			            resolve();
+			        } else {
+			            setTimeout(() => {
+			                const c = tempContainer.querySelector("canvas");
+			                if (c) {
+			                    doc.addImage(c.toDataURL("image/png"), "PNG", 165, y + 28, 30, 30);
+			                }
+			                document.body.removeChild(tempContainer);
+			                resolve();
+			            }, 50);
+			        }
+			    } catch (e) {
+			        console.error("QR Error:", e);
+			        document.body.removeChild(tempContainer);
+			        resolve();
+			    }
+			});
+			
+			// 3. Add the text label below the QR code
+			doc.setFontSize(7);
+			doc.setTextColor(100, 100, 100);
+			doc.text("SCAN FOR DETAILS", 180, y + 62, null, null, 'center');
 		    
 		    // Map Image (if available)
 		    y += 70;
