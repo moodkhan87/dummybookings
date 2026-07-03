@@ -553,6 +553,85 @@
 		    return JSON.stringify(qrData);
 		}
 
+		// Converts an SVG string to a data URL (PNG) for jsPDF
+		async function svgToPng(svgString, width = 24, height = 24, fillColor = 'black') {
+		    return new Promise((resolve) => {
+		        // Inject fill color into SVG
+		        const coloredSvg = svgString
+		            .replace(/fill="[^"]*"/g, `fill="${fillColor}"`)
+		            .replace(/fill:\s*[^;}]*/g, `fill: ${fillColor}`);
+		        
+		        const svgBlob = new Blob([coloredSvg], { type: 'image/svg+xml;charset=utf-8' });
+		        const url = URL.createObjectURL(svgBlob);
+		        
+		        const img = new Image();
+		        img.onload = () => {
+		            const canvas = document.createElement('canvas');
+		            canvas.width = width;
+		            canvas.height = height;
+		            const ctx = canvas.getContext('2d');
+		            ctx.drawImage(img, 0, 0, width, height);
+		            resolve(canvas.toDataURL('image/png'));
+		            URL.revokeObjectURL(url);
+		        };
+		        img.src = url;
+		    });
+		}
+
+		// 🎨 Convert SVG path to jsPDF drawing commands
+		function drawSVGIcon(doc, svgPath, x, y, scale, color) {
+		    // Save current color
+		    const prevColor = doc.getTextColor();
+		    
+		    // Set icon color
+		    doc.setTextColor(color[0], color[1], color[2]);
+		    
+		    // Simple path drawing (for basic SVG paths)
+		    // Note: Complex SVGs may need canvas conversion
+		    doc.saveGraphicsState();
+		    doc.translate(x, y);
+		    doc.scale(scale, scale);
+		    
+		    // Draw path (simplified - for complex icons, use canvas method below)
+		    try {
+		        // Extract path data and draw (basic implementation)
+		        doc.setLineWidth(1);
+		        doc.setDrawColor(color[0], color[1], color[2]);
+		        // For now, we'll use canvas method for reliability
+		    } finally {
+		        doc.restoreGraphicsState();
+		        doc.setTextColor(prevColor[0], prevColor[1], prevColor[2]);
+		    }
+		}
+		
+		// 🖼️ More reliable: Convert SVG to canvas image for PDF
+		async function svgToImage(svgString, width, height, color) {
+		    return new Promise((resolve) => {
+		        // Create canvas
+		        const canvas = document.createElement("canvas");
+		        canvas.width = width;
+		        canvas.height = height;
+		        const ctx = canvas.getContext("2d");
+		        
+		        // Create SVG blob
+		        const coloredSvg = svgString
+		            .replace(/fill:\s*rgb\([^)]+\)/g, `fill: rgb(${color.join(',')})`)
+		            .replace(/fill="[^"]+"/g, `fill="rgb(${color.join(',')})"`);
+		        
+		        const blob = new Blob([coloredSvg], {type: 'image/svg+xml'});
+		        const url = URL.createObjectURL(blob);
+		        
+		        const img = new Image();
+		        img.onload = () => {
+		            ctx.drawImage(img, 0, 0, width, height);
+		            const dataUrl = canvas.toDataURL("image/png");
+		            URL.revokeObjectURL(url);
+		            resolve(dataUrl);
+		        };
+		        img.src = url;
+		    });
+		}
+
 		// 🗺️ Fetch map image from OpenStreetMap (free, no API key)
 		async function fetchMapImage(lat, long) {
 		    return new Promise((resolve) => {
@@ -860,6 +939,44 @@
 		    
 		    // Calculate nights
 		    const nights = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
+
+			// --- PRELOAD ICONS AS PNGs ---
+			const ICON_SIZE = 16;
+			
+			// Colors
+			const BLUE = '#003580';
+			const GOLD = '#FFD400';
+			const GREEN = '#1C6F2A';
+			const ORANGE = '#E68F00';
+			const RED_ICON = '#D60000'; // Alert stays red
+			const GRAY = '#3C3C3C';
+			
+			// Your SVG strings (minified for brevity - full versions below)
+			const svgUser = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M240 192C240 147.8 275.8 112 320 112C364.2 112 400 147.8 400 192C400 236.2 364.2 272 320 272C275.8 272 240 236.2 240 192zM448 192C448 121.3 390.7 64 320 64C249.3 64 192 121.3 192 192C192 262.7 249.3 320 320 320C390.7 320 448 262.7 448 192zM144 544C144 473.3 201.3 416 272 416L368 416C438.7 416 496 473.3 496 544L496 552C496 565.3 506.7 576 520 576C533.3 576 544 565.3 544 552L544 544C544 446.8 465.2 368 368 368L272 368C174.8 368 96 446.8 96 544L96 552C96 565.3 106.7 576 120 576C133.3 576 144 565.3 144 552L144 544z"/></svg>`;
+			const svgMapPin = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve"><g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)"><path d="M 45 90 c -1.062 0 -2.043 -0.561 -2.583 -1.475 l -4.471 -7.563 c -9.222 -15.591 -17.933 -30.317 -20.893 -36.258 c -2.086 -4.277 -3.138 -8.852 -3.138 -13.62 C 13.916 13.944 27.86 0 45 0 c 17.141 0 31.085 13.944 31.085 31.084 c 0 4.764 -1.051 9.339 -3.124 13.596 c -0.021 0.042 -0.042 0.083 -0.063 0.124 c -3.007 6.005 -11.672 20.654 -20.843 36.159 l -4.472 7.563 C 47.044 89.439 46.062 90 45 90 z M 45 6 C 31.168 6 19.916 17.253 19.916 31.084 c 0 3.848 0.847 7.539 2.518 10.969 c 2.852 5.721 11.909 21.033 20.667 35.839 L 45 81.104 l 1.89 -3.196 c 8.763 -14.813 17.823 -30.131 20.687 -35.879 c 0.012 -0.022 0.023 -0.045 0.035 -0.067 c 1.642 -3.406 2.474 -7.065 2.474 -10.877 C 70.085 17.253 58.832 6 45 6 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 45 44.597 c -8.076 0 -14.646 -6.57 -14.646 -14.646 S 36.924 15.306 45 15.306 c 8.075 0 14.646 6.57 14.646 14.646 S 53.075 44.597 45 44.597 z M 45 21.306 c -4.767 0 -8.646 3.878 -8.646 8.646 s 3.878 8.646 8.646 8.646 c 4.768 0 8.646 -3.878 8.646 -8.646 S 49.768 21.306 45 21.306 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/></g></svg>`;
+			const svgBed = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve"><g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)"><polygon points="77.45,47.63 12.55,47.63 12.55,9.16 0,9.16 0,47.63 0,62.2 0,80.83 12.55,80.83 12.55,62.2 77.45,62.2 77.45,80.83 90,80.83 90,62.2 90,47.63 " style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform="  matrix(1 0 0 1 0 0) "/><circle cx="28.683" cy="33.333" r="8.793" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform="  matrix(1 0 0 1 0 0) "/><path d="M 90 42.13 H 42.56 V 29.052 c 0 -2.49 2.019 -4.509 4.509 -4.509 h 25.345 C 82.126 24.544 90 32.417 90 42.13 L 90 42.13 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/></g></svg>`;
+			const svgCheck = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M480 96C515.3 96 544 124.7 544 160L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 160C96 124.7 124.7 96 160 96L480 96zM438 209.7C427.3 201.9 412.3 204.3 404.5 215L285.1 379.2L233 327.1C223.6 317.7 208.4 317.7 199.1 327.1C189.8 336.5 189.7 351.7 199.1 361L271.1 433C276.1 438 283 440.5 289.9 440C296.8 439.5 303.3 435.9 307.4 430.2L443.3 243.2C451.1 232.5 448.7 217.5 438 209.7z"/></svg>`;
+			const svgClock = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve"><g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)"><path d="M 61.524 64.412 c -0.977 0 -1.956 -0.355 -2.728 -1.075 L 42.272 47.925 C 41.46 47.169 41 46.109 41 45 V 21.569 c 0 -2.209 1.791 -4 4 -4 s 4 1.791 4 4 v 21.692 l 15.254 14.227 c 1.615 1.506 1.703 4.037 0.196 5.653 C 63.663 63.985 62.595 64.412 61.524 64.412 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 45 90 C 20.187 90 0 69.813 0 45 C 0 20.187 20.187 0 45 0 c 24.813 0 45 20.187 45 45 C 90 69.813 69.813 90 45 90 z M 45 8 C 24.598 8 8 24.598 8 45 c 0 20.402 16.598 37 37 37 c 20.402 0 37 -16.598 37 -37 C 82 24.598 65.402 8 45 8 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/></g></svg>`;
+			const svgAlert = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve"><g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)"><path d="M 45 62.21 c -1.657 0 -3 -1.343 -3 -3 V 35.03 c 0 -1.657 1.343 -3 3 -3 c 1.657 0 3 1.343 3 3 v 24.18 C 48 60.867 46.657 62.21 45 62.21 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(214,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 45 71.52 c -0.79 0 -1.56 -0.319 -2.12 -0.88 C 42.32 70.08 42 69.31 42 68.52 c 0 -0.2 0.02 -0.39 0.06 -0.59 c 0.04 -0.189 0.09 -0.38 0.17 -0.56 c 0.07 -0.181 0.17 -0.351 0.28 -0.521 c 0.1 -0.16 0.23 -0.31 0.37 -0.45 c 0.14 -0.14 0.29 -0.26 0.45 -0.369 c 0.17 -0.11 0.34 -0.211 0.52 -0.28 c 0.18 -0.07 0.37 -0.13 0.56 -0.17 c 0.98 -0.2 2.01 0.12 2.71 0.819 c 0.56 0.561 0.88 1.33 0.88 2.12 s -0.32 1.561 -0.88 2.12 c -0.141 0.141 -0.29 0.271 -0.46 0.37 c -0.16 0.11 -0.33 0.21 -0.511 0.28 c -0.18 0.08 -0.37 0.13 -0.56 0.17 C 45.39 71.5 45.2 71.52 45 71.52 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(214,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>	<path d="M 87 83.294 H 3 c -1.079 0 -2.075 -0.579 -2.608 -1.518 c -0.533 -0.938 -0.522 -2.089 0.03 -3.017 l 42 -70.588 C 42.963 7.263 43.942 6.706 45 6.706 s 2.037 0.557 2.578 1.466 l 42 70.588 c 0.552 0.928 0.563 2.079 0.029 3.017 C 89.074 82.715 88.079 83.294 87 83.294 z M 8.276 77.294 h 73.449 L 45 15.573 L 8.276 77.294 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(214,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/></g></svg>`;
+			const svgWiFi = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve"><g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)"><circle cx="45" cy="38.85" r="3" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform="  matrix(1 0 0 1 0 0) "/><path d="M 32.288 77.877 c -0.806 0 -1.539 -0.485 -1.849 -1.238 l -4.458 -10.815 l -4.458 10.815 c -0.327 0.794 -1.11 1.293 -1.983 1.233 c -0.857 -0.058 -1.582 -0.656 -1.8 -1.487 l -5.758 -21.946 c -0.28 -1.068 0.358 -2.162 1.427 -2.442 c 1.07 -0.281 2.162 0.358 2.442 1.427 l 4.246 16.182 l 4.036 -9.792 c 0.309 -0.749 1.039 -1.238 1.849 -1.238 s 1.541 0.489 1.849 1.238 l 4.036 9.792 l 4.246 -16.182 c 0.28 -1.068 1.374 -1.708 2.442 -1.427 c 1.068 0.28 1.707 1.374 1.427 2.442 l -5.758 21.946 c -0.218 0.831 -0.943 1.43 -1.8 1.487 C 32.377 77.875 32.333 77.877 32.288 77.877 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 47.221 77.877 c -1.104 0 -2 -0.896 -2 -2 V 53.931 c 0 -1.104 0.896 -2 2 -2 s 2 0.896 2 2 v 21.946 C 49.221 76.981 48.325 77.877 47.221 77.877 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 67.979 51.931 H 58.25 c -1.104 0 -2 0.896 -2 2 v 21.946 c 0 1.104 0.896 2 2 2 s 2 -0.896 2 -2 v -8.973 h 4.364 c 1.104 0 2 -0.896 2 -2 s -0.896 -2 -2 -2 H 60.25 v -6.974 h 7.729 c 1.104 0 2 -0.896 2 -2 S 69.084 51.931 67.979 51.931 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 76.083 77.877 c -1.104 0 -2 -0.896 -2 -2 V 53.931 c 0 -1.104 0.896 -2 2 -2 s 2 0.896 2 2 v 21.946 C 78.083 76.981 77.188 77.877 76.083 77.877 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 76.083 17.434 c -0.531 0 -1.063 -0.211 -1.455 -0.628 C 66.846 8.548 56.324 4 45 4 S 23.154 8.548 15.373 16.805 c -0.757 0.804 -2.022 0.843 -2.827 0.084 c -0.804 -0.757 -0.841 -2.023 -0.084 -2.827 C 21.007 4.994 32.563 0 45 0 s 23.993 4.994 32.538 14.062 c 0.758 0.804 0.721 2.07 -0.083 2.827 C 77.068 17.253 76.575 17.434 76.083 17.434 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 67.3 25.707 c -0.531 0 -1.063 -0.211 -1.456 -0.628 c -5.487 -5.824 -12.89 -9.031 -20.844 -9.031 s -15.356 3.207 -20.844 9.031 c -0.757 0.805 -2.022 0.843 -2.827 0.084 c -0.804 -0.757 -0.841 -2.023 -0.084 -2.827 C 27.496 15.701 35.933 12.047 45 12.047 s 17.504 3.653 23.756 10.288 c 0.757 0.804 0.72 2.07 -0.084 2.827 C 68.285 25.526 67.792 25.707 67.3 25.707 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 58.938 33.584 c -0.531 0 -1.063 -0.211 -1.455 -0.628 c -3.287 -3.488 -7.72 -5.409 -12.482 -5.409 c -4.762 0 -9.195 1.921 -12.482 5.409 c -0.757 0.805 -2.022 0.843 -2.827 0.084 c -0.804 -0.757 -0.841 -2.023 -0.084 -2.827 c 4.05 -4.298 9.517 -6.666 15.393 -6.666 s 11.343 2.367 15.393 6.666 c 0.758 0.804 0.721 2.07 -0.083 2.827 C 59.923 33.403 59.43 33.584 58.938 33.584 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 87.466 90 H 2.534 c -1.104 0 -2 -0.896 -2 -2 V 38.988 c 0 -1.104 0.896 -2 2 -2 h 31.389 c 1.104 0 2 0.896 2 2 s -0.896 2 -2 2 H 4.534 V 86 h 80.932 V 40.988 H 56.077 c -1.104 0 -2 -0.896 -2 -2 s 0.896 -2 2 -2 h 31.389 c 1.104 0 2 0.896 2 2 V 88 C 89.466 89.104 88.57 90 87.466 90 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/></g></svg>`;
+			const svgRestaurant = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve"><g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)"><path d="M 27.559 90 c -2.443 0 -4.719 -0.973 -6.407 -2.738 s -2.558 -4.082 -2.449 -6.523 l 1.986 -44.423 l -4.056 -4.244 c -2.496 -2.611 -3.831 -6.178 -3.664 -9.787 l 0.948 -20.377 c 0.052 -1.104 0.977 -1.96 2.091 -1.905 c 1.104 0.052 1.957 0.988 1.905 2.091 L 16.965 22.47 c -0.117 2.521 0.815 5.013 2.559 6.837 l 4.646 4.861 c 0.377 0.395 0.577 0.926 0.552 1.471 l -2.024 45.276 c -0.06 1.34 0.417 2.611 1.344 3.58 C 24.969 85.466 26.218 86 27.559 86 c 1.341 0 2.589 -0.533 3.516 -1.503 c 0.927 -0.969 1.404 -2.24 1.344 -3.579 L 30.395 35.64 c -0.024 -0.545 0.175 -1.077 0.552 -1.471 l 4.646 -4.861 c 1.744 -1.824 2.676 -4.316 2.559 -6.837 L 37.205 2.093 c -0.051 -1.103 0.802 -2.039 1.905 -2.091 c 1.097 -0.058 2.039 0.802 2.091 1.905 l 0.948 20.377 c 0.167 3.608 -1.168 7.175 -3.664 9.787 l -4.056 4.244 l 1.986 44.424 c 0.109 2.44 -0.761 4.757 -2.449 6.522 S 30.002 90 27.559 90 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 23.456 26.709 c -1.104 0 -2 -0.895 -2 -2 V 2 c 0 -1.104 0.896 -2 2 -2 s 2 0.896 2 2 v 22.709 C 25.456 25.814 24.561 26.709 23.456 26.709 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 31.662 26.709 c -1.104 0 -2 -0.895 -2 -2 V 2 c 0 -1.104 0.896 -2 2 -2 s 2 0.896 2 2 v 22.709 C 33.662 25.814 32.766 26.709 31.662 26.709 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 62.724 90 c -2.442 0 -4.718 -0.972 -6.406 -2.737 s -2.559 -4.082 -2.45 -6.523 l 1.814 -40.581 l -1.941 -1.948 c -4.645 -4.662 -6.433 -11.495 -4.663 -17.833 l 3.547 -12.71 C 53.887 3.153 58.039 0 62.724 0 c 4.686 0 8.84 3.152 10.1 7.666 l 3.548 12.71 c 1.769 6.339 -0.019 13.172 -4.664 17.833 l -1.941 1.948 l 1.814 40.581 c 0.109 2.44 -0.761 4.757 -2.449 6.522 C 67.443 89.027 65.168 90 62.724 90 z M 62.724 4 c -2.898 0 -5.467 1.95 -6.247 4.742 l -3.546 12.71 c -1.383 4.953 0.013 10.292 3.644 13.935 l 2.562 2.57 c 0.396 0.396 0.606 0.941 0.581 1.501 l -1.853 41.458 c -0.06 1.34 0.418 2.611 1.345 3.581 C 60.136 85.466 61.385 86 62.724 86 c 1.341 0 2.59 -0.533 3.517 -1.503 c 0.927 -0.969 1.403 -2.24 1.344 -3.579 l -1.854 -41.459 c -0.025 -0.56 0.186 -1.104 0.581 -1.501 l 2.562 -2.57 l 0 0 c 3.63 -3.643 5.026 -8.982 3.645 -13.935 L 68.97 8.742 C 68.192 5.95 65.623 4 62.724 4 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/></g></svg>`;
+			const svgBell = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve"><g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)"><path d="M 84.881 73.312 H 53.919 l -2.2 -5.5 h 34.419 c 2.129 0 3.861 -1.732 3.861 -3.861 c 0 -24.478 -19.648 -44.439 -44 -44.975 V 15.95 h 1.492 c 2.619 0 4.75 -2.131 4.75 -4.75 s -2.131 -4.75 -4.75 -4.75 h -4.985 c -2.619 0 -4.75 2.131 -4.75 4.75 s 2.131 4.75 4.75 4.75 H 44 v 3.025 C 19.648 19.511 0 39.473 0 63.95 c 0 2.129 1.732 3.861 3.862 3.861 H 38.28 l -2.2 5.5 H 5.119 C 2.296 73.312 0 75.608 0 78.431 s 2.296 5.119 5.119 5.119 h 79.762 c 2.822 0 5.119 -2.297 5.119 -5.119 S 87.703 73.312 84.881 73.312 z M 39.757 11.2 c 0 -1.517 1.234 -2.75 2.75 -2.75 h 4.985 c 1.517 0 2.75 1.233 2.75 2.75 s -1.233 2.75 -2.75 2.75 h -4.985 C 40.991 13.95 39.757 12.717 39.757 11.2 z M 2 63.95 c 0 -23.71 19.29 -43 43 -43 c 23.71 0 43 19.29 43 43 c 0 1.026 -0.835 1.861 -1.861 1.861 H 50.242 H 39.757 H 3.862 C 2.835 65.812 2 64.977 2 63.95 z M 40.435 67.812 h 9.131 l 2.2 5.5 H 38.234 L 40.435 67.812 z M 84.881 81.55 H 5.119 C 3.399 81.55 2 80.15 2 78.431 s 1.399 -3.119 3.119 -3.119 h 31.638 h 16.485 h 31.639 c 1.72 0 3.119 1.399 3.119 3.119 S 86.601 81.55 84.881 81.55 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/><path d="M 34.534 29.334 c -11.406 3.547 -20.42 12.913 -23.525 24.443 c -0.144 0.533 0.172 1.082 0.706 1.226 c 0.087 0.023 0.174 0.034 0.26 0.034 c 0.441 0 0.845 -0.294 0.965 -0.74 C 15.868 43.423 24.37 34.59 35.127 31.245 c 0.527 -0.164 0.822 -0.725 0.658 -1.252 C 35.622 29.465 35.058 29.172 34.534 29.334 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/></g></svg>`;
+			const svgSnowflake = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve"><g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)"><path d="M 81.669 52.081 L 69.53 55.699 L 51 45 l 18.531 -10.699 l 12.138 3.617 c 0.285 0.085 0.574 0.126 0.857 0.126 c 1.293 0 2.486 -0.842 2.874 -2.144 c 0.474 -1.588 -0.431 -3.259 -2.019 -3.732 l -6.699 -1.996 l 6.19 -3.574 c 1.435 -0.829 1.927 -2.663 1.098 -4.098 c -0.828 -1.434 -2.66 -1.925 -4.098 -1.098 l -6.19 3.574 l 1.621 -6.8 c 0.385 -1.612 -0.61 -3.23 -2.223 -3.614 c -1.605 -0.383 -3.229 0.611 -3.613 2.223 l -2.937 12.321 L 48 39.804 V 18.407 l 9.202 -8.704 c 1.204 -1.139 1.257 -3.038 0.118 -4.241 c -1.138 -1.203 -3.035 -1.256 -4.241 -0.118 L 48 10.148 V 3 c 0 -1.657 -1.343 -3 -3 -3 c -1.657 0 -3 1.343 -3 3 v 7.148 l -5.079 -4.804 c -1.204 -1.139 -3.102 -1.084 -4.241 0.118 c -1.139 1.204 -1.086 3.103 0.118 4.241 L 42 18.407 v 21.397 L 23.47 29.106 l -2.937 -12.321 c -0.385 -1.611 -2.005 -2.608 -3.614 -2.223 c -1.611 0.384 -2.606 2.002 -2.223 3.614 l 1.621 6.8 l -6.19 -3.574 c -1.436 -0.828 -3.27 -0.335 -4.098 1.098 c -0.828 1.435 -0.337 3.27 1.098 4.098 l 6.19 3.574 l -6.7 1.996 C 5.03 32.642 4.126 34.313 4.599 35.9 c 0.388 1.302 1.581 2.145 2.874 2.145 c 0.283 0 0.572 -0.041 0.857 -0.126 l 12.139 -3.617 L 39 45 L 20.47 55.699 L 8.331 52.081 C 6.742 51.61 5.072 52.512 4.599 54.1 s 0.43 3.259 2.018 3.731 l 6.701 1.997 l -6.191 3.574 C 5.692 64.23 5.201 66.065 6.029 67.5 c 0.556 0.963 1.564 1.501 2.601 1.501 c 0.509 0 1.025 -0.13 1.497 -0.403 l 6.19 -3.574 l -1.621 6.801 c -0.384 1.611 0.611 3.229 2.223 3.613 c 0.234 0.056 0.468 0.083 0.698 0.083 c 1.357 0 2.587 -0.928 2.916 -2.306 l 2.937 -12.321 L 42 50.196 v 21.397 l -9.202 8.704 c -1.204 1.139 -1.256 3.038 -0.118 4.241 c 0.59 0.624 1.384 0.938 2.18 0.938 c 0.74 0 1.481 -0.272 2.061 -0.82 L 42 79.852 V 87 c 0 1.657 1.343 3 3 3 c 1.657 0 3 -1.343 3 -3 v -7.148 l 5.079 4.804 c 0.58 0.549 1.321 0.82 2.061 0.82 c 0.796 0 1.591 -0.314 2.181 -0.938 c 1.139 -1.204 1.086 -3.103 -0.118 -4.241 L 48 71.593 V 50.196 l 18.531 10.699 l 2.937 12.32 c 0.328 1.378 1.559 2.306 2.915 2.306 c 0.23 0 0.465 -0.027 0.698 -0.083 c 1.612 -0.384 2.607 -2.002 2.223 -3.613 l -1.621 -6.801 l 6.19 3.574 c 0.473 0.273 0.988 0.403 1.497 0.403 c 1.037 0 2.045 -0.539 2.601 -1.501 c 0.829 -1.435 0.337 -3.27 -1.098 -4.098 l -6.191 -3.575 l 6.7 -1.997 c 1.588 -0.474 2.492 -2.144 2.019 -3.731 C 84.928 52.512 83.256 51.61 81.669 52.081 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/></g></svg>`;
+			
+			// Generate PNGs
+			const [userIcon, mapPinIcon, bedIcon, checkIcon, clockIcon, alertIcon, goldStar, wifiIcon, restaurantIcon, bellIcon, snowflakeIcon] = await Promise.all([
+			    svgToPng(svgUser, ICON_SIZE, ICON_SIZE, BLUE),
+			    svgToPng(svgMapPin, ICON_SIZE, ICON_SIZE, BLUE),
+			    svgToPng(svgBed, ICON_SIZE, ICON_SIZE, BLUE),
+			    svgToPng(svgCheck, ICON_SIZE, ICON_SIZE, GREEN),
+			    svgToPng(svgClock, ICON_SIZE, ICON_SIZE, ORANGE),
+			    svgToPng(svgAlert, ICON_SIZE, ICON_SIZE, RED_ICON),
+			    svgToPng(svgStar, 12, 12, GOLD),
+			    svgToPng(svgWiFi, 14, 14, GRAY),    // Amenities are slightly larger
+			    svgToPng(svgRestaurant, 14, 14, GRAY),
+			    svgToPng(svgBell, 14, 14, GRAY),
+			    svgToPng(svgSnowflake, 14, 14, GRAY)
+			]);
 		    
 		    // Generate QR data
 		    const qrDataString = generateQRData(reservationNumber, hotel.hotelname, guestName, checkIn, checkOut, rooms, guests);
@@ -895,12 +1012,11 @@
 		    doc.setFont("helvetica", "bold");
 		    doc.text(hotel.hotelname, 15, 55);
 		    
-		    // Stars
-		    const stars = '★'.repeat(hotel.ratingNum || 4);
-		    doc.setTextColor(254, 187, 2); // Gold
-		    doc.setFontSize(12);
-		    doc.text(stars, 15, 62);
-		    
+		    // Gold Star Rating using your SVG (goldStar variable from preload block)
+			const rating = hotel.ratingNum || 4;
+			for (let i = 0; i < rating; i++) {
+			    doc.addImage(goldStar, 'PNG', 15 + (i * 14), 56, 12, 12);
+			}		    
 		    // === INFO BOXES (Check-in, Check-out, Duration, Guests) ===
 		    doc.setDrawColor(220, 220, 220);
 		    doc.setLineWidth(0.5);
@@ -953,10 +1069,20 @@
 		    let y = 105;
 		    
 		    // LEFT COLUMN: Guest Details & Accommodation
-		    doc.setFontSize(12);
-		    doc.setFont("helvetica", "bold");
-		    doc.setTextColor(0, 53, 128);
-		    doc.text("👤 Guest Details", 15, y);
+		    // Guest Details with User Icon
+			const userColor = [0, 53, 128]; // #003580
+			const userSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M240 192C240 147.8 275.8 112 320 112C364.2 112 400 147.8 400 192C400 236.2 364.2 272 320 272C275.8 272 240 236.2 240 192zM448 192C448 121.3 390.7 64 320 64C249.3 64 192 121.3 192 192C192 262.7 249.3 320 320 320C390.7 320 448 262.7 448 192zM144 544C144 473.3 201.3 416 272 416L368 416C438.7 416 496 473.3 496 544L496 552C496 565.3 506.7 576 520 576C533.3 576 544 565.3 544 552L544 544C544 446.8 465.2 368 368 368L272 368C174.8 368 96 446.8 96 544L96 552C96 565.3 106.7 576 120 576C133.3 576 144 565.3 144 552L144 544z"/></svg>`;
+			
+			// Draw icon (simplified - for production, use svgToImage function)
+			doc.setFillColor(userColor[0], userColor[1], userColor[2]);
+			doc.circle(18, y - 2, 4, 'F'); // Placeholder circle for icon
+			doc.setFont("helvetica", "bold");
+			doc.setTextColor(userColor[0], userColor[1], userColor[2]);
+			// Guest Details + Real User Icon
+			doc.addImage(userIcon, 'PNG', 15, y - 6, ICON_SIZE, ICON_SIZE);
+			doc.setFont("helvetica", "bold");
+			doc.setTextColor(0, 53, 128); // #003580
+			doc.text("Guest Details", 15 + ICON_SIZE + 4, y);
 		    
 		    doc.setFont("helvetica", "normal");
 		    doc.setTextColor(0, 0, 0);
@@ -972,7 +1098,11 @@
 		    doc.roundedRect(15, y, 90, 40, 3, 3, 'F');
 		    doc.setFont("helvetica", "bold");
 		    doc.setTextColor(0, 53, 128);
-		    doc.text("🛏️ Accommodation", 20, y + 8);
+		    // Accommodation + Real Bed Icon
+			doc.addImage(bedIcon, 'PNG', 20, y + 2, ICON_SIZE, ICON_SIZE);
+			doc.setFont("helvetica", "bold");
+			doc.setTextColor(0, 53, 128); // #003580
+			doc.text("Accommodation", 20 + ICON_SIZE + 4, y + 8);
 		    
 		    doc.setFont("helvetica", "normal");
 		    doc.setTextColor(60, 60, 60);
@@ -1000,11 +1130,17 @@
 		    }
 		    
 		    // RIGHT COLUMN: Location & Contact + QR + Map
-		    y = 105;
-		    doc.setFontSize(12);
-		    doc.setFont("helvetica", "bold");
-		    doc.setTextColor(0, 53, 128);
-		    doc.text("📍 Location & Contact", 120, y);
+		    // Location & Contact with Map Pin Icon
+			const locationColor = [0, 53, 128]; // #003580
+			doc.setFillColor(locationColor[0], locationColor[1], locationColor[2]);
+			doc.circle(123, y - 2, 4, 'F'); // Placeholder
+			doc.setFont("helvetica", "bold");
+			doc.setTextColor(locationColor[0], locationColor[1], locationColor[2]);
+			// Location & Contact + Real Map Pin Icon
+			doc.addImage(mapPinIcon, 'PNG', 120, y - 6, ICON_SIZE, ICON_SIZE);
+			doc.setFont("helvetica", "bold");
+			doc.setTextColor(0, 53, 128); // #003580
+			doc.text("Location & Contact", 120 + ICON_SIZE + 4, y);
 		    
 		    doc.setFont("helvetica", "normal");
 		    doc.setTextColor(60, 60, 60);
@@ -1062,7 +1198,11 @@
 		    doc.setFontSize(12);
 		    doc.setFont("helvetica", "bold");
 		    doc.setTextColor(0, 53, 128);
-		    doc.text("🗺️ Hotel Location", 15, y);
+		    // Hotel Location + Real Map Icon
+			doc.addImage(mapPinIcon, 'PNG', 15, y - 6, ICON_SIZE, ICON_SIZE); // Reuse map pin for location
+			doc.setFont("helvetica", "bold");
+			doc.setTextColor(0, 53, 128); // #003580
+			doc.text("Hotel Location", 15 + ICON_SIZE + 4, y);
 		    
 		    if (mapImageData) {
 		        doc.addImage(mapImageData, "PNG", 15, y + 5, 90, 60);
@@ -1083,51 +1223,103 @@
 		    doc.setFont("helvetica", "normal");
 		    doc.setTextColor(60, 60, 60);
 		    doc.setFontSize(9);
-		    doc.text("📶 WiFi", 120, y + 8);
-		    doc.text("🍽️ Restaurant", 155, y + 8);
-		    doc.text("🛎️ Room Service", 120, y + 15);
-		    doc.text("❄️ Air Conditioning", 155, y + 15);
+		    // Amenities with Icons (Dark Gray: #3C3C3C)
+			const amenityColor = [60, 60, 60];
+			doc.setTextColor(amenityColor[0], amenityColor[1], amenityColor[2]);
+			doc.setFont("helvetica", "normal");
+			doc.setFontSize(9);
+				
+			// Amenities with SVG Icons (Dark Gray: #3C3C3C)
+			doc.setTextColor(60, 60, 60);
+			doc.setFont("helvetica", "normal");
+			doc.setFontSize(9);
+			
+			// WiFi + Icon
+			doc.addImage(wifiIcon, 'PNG', 120, y + 4, 14, 14);
+			doc.text("WiFi", 136, y + 8);
+			
+			// Restaurant + Icon
+			doc.addImage(restaurantIcon, 'PNG', 155, y + 4, 14, 14);
+			doc.text("Restaurant", 171, y + 8);
+			
+			// Room Service + Icon
+			doc.addImage(bellIcon, 'PNG', 120, y + 11, 14, 14);
+			doc.text("Room Service", 136, y + 15);
+			
+			// Air Conditioning + Icon
+			doc.addImage(snowflakeIcon, 'PNG', 155, y + 11, 14, 14);
+			doc.text("Air Conditioning", 171, y + 15);
 		    
 		    // === IMPORTANT INFORMATION (3 Boxes) ===
 		    y += 75;
 		    
-		    // Box 1: Check-in Policy (Green)
-		    doc.setFillColor(232, 245, 233);
-		    doc.roundedRect(15, y, 60, 30, 2, 2, 'F');
-		    doc.setFont("helvetica", "bold");
-		    doc.setTextColor(28, 111, 42);
-		    doc.text("✓ Check-in Policy", 20, y + 7);
-		    doc.setFont("helvetica", "normal");
-		    doc.setFontSize(7);
-		    doc.setTextColor(40, 80, 40);
-		    doc.text("Present this voucher and valid", 18, y + 13);
-		    doc.text("photo ID at check-in.", 18, y + 17);
-		    doc.text("Reservations are guaranteed.", 18, y + 21);
+		    // Box 1: Check-in Policy (Green) - EXACT PDF MATCH
+			doc.setFillColor(232, 245, 233); // #E8F5E9 background
+			doc.roundedRect(15, y, 60, 30, 2, 2, 'F');
+			
+			// Draw Checkmark Icon (simplified)
+			doc.setFillColor(28, 111, 42); // #1C6F2A icon color
+			doc.setFont("helvetica", "bold");
+			doc.setFontSize(10);
+			doc.setTextColor(28, 111, 42); // #1C6F2A text color
+			doc.text("✓", 18, y + 7); // Checkmark symbol
+			doc.addImage(checkIcon, 'PNG', 18, y + 3, ICON_SIZE, ICON_SIZE);
+			doc.setFont("helvetica", "bold");
+			doc.setTextColor(28, 111, 42); // #1C6F2A
+			doc.text("Check-in Policy", 18 + ICON_SIZE + 2, y + 7);
+			
+			// Body text
+			doc.setFont("helvetica", "normal");
+			doc.setFontSize(7);
+			doc.setTextColor(40, 80, 40); // Slightly lighter green for body
+			doc.text("Present this voucher and valid", 18, y + 13);
+			doc.text("photo ID at check-in.", 18, y + 17);
+			doc.text("Reservations are guaranteed.", 18, y + 21);
 		    
-		    // Box 2: Cancellation (Yellow/Orange)
-		    doc.setFillColor(255, 249, 225);
-		    doc.roundedRect(80, y, 60, 30, 2, 2, 'F');
-		    doc.setFont("helvetica", "bold");
-		    doc.setTextColor(230, 143, 0);
-		    doc.text("↻ Cancellation", 85, y + 7);
-		    doc.setFont("helvetica", "normal");
-		    doc.setFontSize(7);
-		    doc.setTextColor(180, 120, 0);
-		    doc.text("Free cancellation until", 83, y + 13);
-		    doc.text("48 hours before check-in.", 83, y + 17);
-		    
-		    // Box 3: Please Note (Red)
-		    doc.setFillColor(253, 237, 237);
-		    doc.roundedRect(145, y, 50, 30, 2, 2, 'F');
-		    doc.setFont("helvetica", "bold");
-		    doc.setTextColor(198, 40, 40);
-		    doc.text("⚠ Please Note", 150, y + 7);
-		    doc.setFont("helvetica", "normal");
-		    doc.setFontSize(7);
-		    doc.setTextColor(150, 40, 40);
-		    doc.text("Modifications subject to", 148, y + 13);
-		    doc.text("availability. Contact", 148, y + 17);
-		    doc.text("property directly.", 148, y + 21);
+		    // Box 2: Cancellation (Orange) - EXACT PDF MATCH
+			doc.setFillColor(255, 249, 225); // #FFF9E1 background
+			doc.roundedRect(80, y, 60, 30, 2, 2, 'F');
+			
+			// Draw Clock Icon (simplified circle + hands)
+			doc.setFillColor(230, 143, 0); // #E68F00 icon color
+			doc.setFont("helvetica", "bold");
+			doc.setFontSize(10);
+			doc.setTextColor(230, 143, 0); // #E68F00 text color
+			doc.text("↻", 83, y + 7); // Clock/refresh symbol
+			doc.addImage(clockIcon, 'PNG', 83, y + 3, ICON_SIZE, ICON_SIZE);
+			doc.setFont("helvetica", "bold");
+			doc.setTextColor(230, 143, 0); // #E68F00
+			doc.text("Cancellation", 83 + ICON_SIZE + 2, y + 7);
+			
+			// Body text
+			doc.setFont("helvetica", "normal");
+			doc.setFontSize(7);
+			doc.setTextColor(180, 120, 0); // Slightly lighter orange for body
+			doc.text("Free cancellation before:", 83, y + 13);
+			doc.text("Sun, Jun 19, 2026 at 4:15 PM UTC", 83, y + 17);
+					    
+			// Box 3: Please Note (Red) - EXACT PDF MATCH
+			doc.setFillColor(253, 237, 237); // #FDE9E9 background
+			doc.roundedRect(145, y, 50, 30, 2, 2, 'F');
+			
+			// Draw Alert Icon (triangle - KEEP RED #D60000 as requested)
+			doc.setFillColor(214, 0, 0); // #D60000 alert icon (special case)
+			doc.setFont("helvetica", "bold");
+			doc.setFontSize(10);
+			doc.setTextColor(198, 40, 40); // #C62828 text color
+			doc.text("⚠", 148, y + 7); // Warning symbol
+			doc.addImage(alertIcon, 'PNG', 148, y + 3, ICON_SIZE, ICON_SIZE);
+			doc.setFont("helvetica", "bold");
+			doc.setTextColor(198, 40, 40); // #C62828
+			doc.text("Please Note", 148 + ICON_SIZE + 2, y + 7);
+			
+			// Body text
+			doc.setFont("helvetica", "normal");
+			doc.setFontSize(7);
+			doc.setTextColor(150, 40, 40); // Slightly lighter red for body
+			doc.text("Modifications are subject to", 148, y + 13);
+			doc.text("availability. Contact", 148, y + 17);
+			doc.text("property directly.", 148, y + 21);
 		    
 		    // === FOOTER ===
 		    doc.setFillColor(0, 53, 128);
