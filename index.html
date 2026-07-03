@@ -813,7 +813,9 @@
 		    doc.text("© 2023 Hotel Reservation System", 105, 286, null, null, 'center');
 		
 		    // Check which PDF style is selected
-			const pdfStyle = document.querySelector('input[name="pdfStyle"]:checked')?.value || 'modelA';
+			// ✅ SAFE: Robust check for radio buttons
+			const pdfStyleRadio = document.querySelector('input[name="pdfStyle"]:checked');
+			const pdfStyle = pdfStyleRadio ? pdfStyleRadio.value : 'modelA';
 			
 			if (pdfStyle === 'modelB') {
 			    // Generate Model B (new modern layout with map & QR)
