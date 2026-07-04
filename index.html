@@ -1026,11 +1026,11 @@
 		    const qrDiv = document.createElement("div");
 		    const qrcode = new QRCode(qrDiv, {
 		        text: encryptedQRRawData,
-		        width: 128,
-		        height: 128,
-		        correctLevel: QRCode.CorrectLevel.H
+		        width: 256,      // ✅ Increased size to hold more data
+		        height: 256,     // ✅ Increased size
+		        correctLevel: QRCode.CorrectLevel.M // ✅ Changed from H (High) to M (Medium)
 		    });
-		
+				
 		    // Wait for QR canvas to actually exist (more reliable than fixed timeout)
 		  await new Promise(resolve => {
 		      const check = () => {
