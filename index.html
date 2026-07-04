@@ -1055,11 +1055,11 @@
 		    // ==========================================
 		    // 1. TOP HEADER SECTION (MODERN LOOK)
 		    // ==========================================
-		    const headerX = marginX + 20; // Move 2cm (20mm) to the right
+		    const headerX = marginX + 17;
 			
 			// Draw check icon before "Booking Confirmation"
 			if (checkHeaderIcon) {
-			    doc.addImage(checkHeaderIcon, 'PNG', headerX - 15, currentY + 1, 15, 15); // 1.5cm x 1.5cm
+			    doc.addImage(checkHeaderIcon, 'PNG', headerX - 22, currentY, 20, 20); // 2cm x 2cm
 			}
 			
 			doc.setFont("helvetica", "bold");
