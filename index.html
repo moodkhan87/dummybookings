@@ -1107,7 +1107,7 @@
 		    doc.setFontSize(12);
 		    // Draw gold stars horizontally
 		    for (let i = 0; i < 5; i++) {
-		       doc.addImage(goldStar, 'PNG', x, y, 8, 8);
+		       doc.addImage(goldStar, 'PNG', marginX + 4, currentY + 3, 8, 8);
 		    }
 		    doc.setFont("helvetica", "normal");
 		    doc.setFontSize(9.5);
@@ -1141,7 +1141,7 @@
 		    doc.line(marginX + 90, currentY, marginX + 90, currentY + 16);
 		
 		    // Left Block: Check-In Details
-		    if (clockIcon) doc.addImage(clockIcon, 'PNG', x, y, 8, 8);
+		    if (clockIcon) doc.addImage(clockIcon, 'PNG', marginX + 4, currentY + 3, 8, 8);
 		    doc.setFont("helvetica", "normal");
 		    doc.setFontSize(9);
 		    doc.setTextColor(100, 100, 100);
@@ -1156,7 +1156,7 @@
 		    doc.text("from 14:00 PM", marginX + 55, currentY + 11);
 		
 		    // Right Block: Check-Out Details
-		    if (clockIcon) doc.addImage(clockIcon, 'PNG', x, y, 8, 8);
+		    if (clockIcon) doc.addImage(clockIcon, 'PNG', marginX + 4, currentY + 3, 8, 8);
 		    doc.setFont("helvetica", "normal");
 		    doc.setFontSize(9);
 		    doc.setTextColor(100, 100, 100);
@@ -1187,7 +1187,7 @@
 		    doc.setFontSize(9.5);
 		    doc.setTextColor(255, 255, 255);
 		    
-		    if (userIcon) doc.addImage(userIcon, 'PNG', x, y, 8, 8);
+		    if (userIcon) doc.addImage(userIcon, 'PNG', marginX + 4, currentY + 3, 8, 8);
 		    doc.text("Lead Guest Details", marginX + 10, currentY + 5.5);
 		    doc.text("Contact Information", marginX + 100, currentY + 5.5);
 		
@@ -1218,7 +1218,7 @@
 		    doc.rect(marginX, currentY, 180, 8, 'F');
 		    doc.rect(marginX, currentY, 180, 8, 'D');
 		    
-		    if (bedIcon) doc.addImage(bedIcon, 'PNG', x, y, 8, 8);
+		    if (bedIcon) doc.addImage(bedIcon, 'PNG', marginX + 4, currentY + 3, 8, 8);
 		    doc.setFontSize(9);
 		    doc.setTextColor(50, 50, 50);
 		    doc.text("Room #", marginX + 10, currentY + 5.5);
@@ -1269,17 +1269,17 @@
 		    const col3 = marginX + 125;
 		
 		    // WiFi
-		    if (wifiIcon) doc.addImage(wifiIcon, 'PNG', x, y, 8, 8);
+		    if (wifiIcon) doc.addImage(wifiIcon, 'PNG', marginX + 4, currentY + 3, 8, 8);
 		    doc.setFont("helvetica", "normal");
 		    doc.setTextColor(60, 60, 60);
 		    doc.text("WiFi", col1 + 16, amenityY + 8);
 		
 		    // Restaurant
-		    if (restaurantIcon) doc.addImage(restaurantIcon, 'PNG', x, y, 8, 8);
+		    if (restaurantIcon) doc.addImage(restaurantIcon, 'PNG', marginX + 4, currentY + 3, 8, 8);
 		    doc.text("Restaurant", col2 + 16, amenityY + 8);
 		
 		    // Room Service
-		    if (bellIcon) doc.addImage(bellIcon, 'PNG', x, y, 8, 8);
+		    if (bellIcon) doc.addImage(bellIcon, 'PNG', marginX + 4, currentY + 3, 8, 8);
 		    doc.text("Room Service", col3 + 16, amenityY + 8);
 		
 		    // Air Conditioning
@@ -1305,7 +1305,7 @@
 			// === Box 1: Check-in Policy (Green) ===
 			doc.setFillColor(232, 245, 233); // Light Green BG
 			doc.roundedRect(marginX, boxY, boxW, boxH, 2, 2, 'F');
-			if (checkIcon) doc.addImage(checkIcon, 'PNG', x, y, 8, 8);
+			if (checkIcon) doc.addImage(checkIcon, 'PNG', marginX + 4, currentY + 3, 8, 8);
 			
 			doc.setFont("helvetica", "bold");
 			doc.setFontSize(7);
@@ -1320,7 +1320,7 @@
 			// === Box 2: Cancellation (Orange) ===
 			doc.setFillColor(255, 249, 225); // Light Orange BG
 			doc.roundedRect(marginX + boxW + gap, boxY, boxW, boxH, 2, 2, 'F');
-			if (clockIcon) doc.addImage(clockIcon, 'PNG', x, y, 8, 8);
+			if (clockIcon) doc.addImage(clockIcon, 'PNG', marginX + 4, currentY + 3, 8, 8);
 			
 			doc.setFont("helvetica", "bold");
 			doc.setFontSize(7);
@@ -1336,7 +1336,7 @@
 			// === Box 3: Please Note (Red) ===
 			doc.setFillColor(253, 237, 237); // Light Red BG
 			doc.roundedRect(marginX + (boxW + gap) * 2, boxY, boxW, boxH, 2, 2, 'F');
-			if (alertIcon) doc.addImage(alertIcon, 'PNG', x, y, 8, 8);
+			if (alertIcon) doc.addImage(alertIcon, 'PNG', marginX + 4, currentY + 3, 8, 8);
 			
 			doc.setFont("helvetica", "bold");
 			doc.setFontSize(7);
