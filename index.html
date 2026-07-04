@@ -1148,17 +1148,39 @@
 		    doc.setTextColor(primaryNavy[0], primaryNavy[1], primaryNavy[2]);
 		    doc.text(`Phone: ${phone}`, marginX, currentY + 19 + addressHeight);
 		
-		    // Right Column: MAP BOX WITH BASE64 VERIFICATION QR CODE
-		    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-		    doc.setFillColor(250, 250, 250);
-		    doc.rect(mapBoxX, currentY, colWidth, 32, 'F');
-		    doc.rect(mapBoxX, currentY, colWidth, 32, 'D');
-		
-		    if (qrImageBase64) {
-		        doc.addImage(qrImageBase64, "PNG", mapBoxX + (colWidth - 26) / 2, currentY + 3, 16, 16);
-		    }
-		
-		    currentY += 42;
+		    // === Right Column: QR CODE BOX (Perfect Fit) ===
+			const qrSize = 24; // Size of the QR code in mm (larger for better scanning)
+			const qrMargin = 4; // Margin inside the box around the QR code
+			const qrBoxW = qrSize + (qrMargin * 2); // Box Width = QR + Margins
+			const qrBoxH = qrSize + (qrMargin * 2); // Box Height = QR + Margins (Square Box)
+			
+			// Position: 2cm (20mm) from the right edge
+			const qrBoxX = rightAlignX - qrBoxW - 20; 
+			
+			// 1. Draw Background Box
+			doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+			doc.setFillColor(250, 250, 250);
+			doc.rect(qrBoxX, currentY, qrBoxW, qrBoxH, 'F');
+			doc.rect(qrBoxX, currentY, qrBoxW, qrBoxH, 'D');
+			
+			// 2. Draw QR Code (Centered in Box)
+			if (qrImageBase64) {
+			    const qrX = qrBoxX + qrMargin; 
+			    const qrY = currentY + qrMargin; 
+			    doc.addImage(qrImageBase64, "PNG", qrX, qrY, qrSize, qrSize);
+			}
+			
+			// 3. Add "SCAN FOR DETAILS" Text Below Box
+			doc.setFont("helvetica", "bold");
+			doc.setFontSize(7);
+			doc.setTextColor(100, 100, 100);
+			const scanText = "SCAN FOR DETAILS";
+			const textWidth = doc.getTextWidth(scanText);
+			const textX = qrBoxX + (qrBoxW - textWidth) / 2; // Center text under box
+			doc.text(scanText, textX, currentY + qrBoxH + 4);
+			
+			// Update Y cursor
+			currentY += qrBoxH + 12; 
 		
 		    // ==========================================
 		    // 3. CHECK-IN / CHECK-OUT SEPARATED BAR WITH COMPILED CLOCK ICON
