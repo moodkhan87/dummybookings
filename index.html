@@ -918,19 +918,7 @@
 			        return;
 			    }
 			    
-			    await generateModelBPDF(
-			        reservationNumber,
-			        name,
-			        checkInVal,           // ✅ Use cached value
-			        checkOutVal,          // ✅ Use cached value
-			        currentHotel,
-			        roomsVal,             // ✅ Use cached value
-			        totalGuests,          // ✅ Use cached value
-			        agencyName,
-			        agencyAddress,
-			        agencyContact,
-			        selectedRooms
-			    );
+			    await generatePDFModelB();
 			} else {
 			    console.log("📄 Generating Model A PDF...");
 			    doc.save(`hotel-${reservationNumber}.pdf`);
