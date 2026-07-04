@@ -997,18 +997,18 @@
 			const svgPhone = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="256" height="256" viewBox="0 0 256 256" xml:space="preserve"><g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)"><path d="M 69.315 90.026 C 55.681 90.028 38.46 79.081 24.689 65.311 C 6.015 46.638 -7.468 21.613 4.506 7.8 C 5.267 6.922 6.24 6.248 7.397 5.794 c 1.428 -0.56 4.015 -1.651 7.687 -3.244 l 0.008 -0.003 c 1.707 -0.74 3.346 -1.458 4.599 -2.009 c 2.946 -1.292 6.401 -0.181 8.045 2.587 l 10.407 17.539 c 1.134 1.91 1.186 4.313 0.135 6.271 L 32.043 38.55 L 51.45 57.957 l 11.613 -6.235 c 1.962 -1.052 4.364 -0.998 6.272 0.135 l 16.293 9.668 l 2.157 1.395 l 0 0 c 2.086 1.799 2.815 4.794 1.676 7.39 c -0.469 1.064 -1.057 2.406 -1.676 3.831 l 0.756 -1.735 l -1.127 2.589 c -1.548 3.571 -2.657 6.2 -3.21 7.61 c -0.453 1.156 -1.128 2.129 -2.004 2.89 C 78.574 88.638 74.171 90.026 69.315 90.026 z M 17.98 8.925 L 17.98 8.925 c -3.807 1.651 -6.508 2.791 -8.028 3.387 C 9.828 12.36 9.781 12.4 9.781 12.4 c -8.562 9.878 3.505 31.608 19.858 47.961 c 16.353 16.352 38.079 28.418 47.974 19.846 h -0.001 c -0.002 0 0.033 -0.049 0.076 -0.157 c 0.602 -1.534 1.741 -4.235 3.388 -8.031 l 1.745 -4.021 l -16.755 -9.942 l -11.711 6.287 c -2.5 1.341 -5.524 0.893 -7.527 -1.11 l -20.06 -20.06 c -2.004 -2.005 -2.451 -5.03 -1.11 -7.527 l 6.287 -11.711 L 21.997 7.171 C 20.843 7.678 19.438 8.292 17.98 8.925 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/></g></svg>`;
 		
 		const [clockIcon, userIcon, bedIcon, goldStar, wifiIcon, restaurantIcon, bellIcon, snowflakeIcon, alertIcon, checkIcon, mapPinIcon, phoneIcon] = await Promise.all([
-		    svgToPng(svgClock, 4, 4, '#003580'),
-		    svgToPng(svgUser, 4, 4, '#003580'),
-		    svgToPng(svgBed, 4, 4, '#003580'),
-		    svgToPng(svgStar, 4, 4, '#FFD400'),
-		    svgToPng(svgWiFi, 4, 4, '#3C3C3C'),
-		    svgToPng(svgRestaurant, 4, 4, '#3C3C3C'),
-		    svgToPng(svgBell, 4, 4, '#3C3C3C'),
-		    svgToPng(svgSnowflake, 4, 4, '#3C3C3C'),
-		    svgToPng(svgAlert, 4, 4, '#D60000'), // Keep red
-		    svgToPng(svgCheck, 4, 4, '#1C6F2A'),
-		    svgToPng(svgMapPin, 4, 4, '#003580'),
-		    svgToPng(svgPhone, 4, 4, '#003580')
+		    svgToPng(svgClock, 64, 64, '#003580'),
+		    svgToPng(svgUser, 64, 64, '#003580'),
+		    svgToPng(svgBed, 64, 64, '#003580'),
+		    svgToPng(svgStar, 64, 64, '#FFD400'),
+		    svgToPng(svgWiFi, 64, 64, '#3C3C3C'),
+		    svgToPng(svgRestaurant, 64, 64, '#3C3C3C'),
+		    svgToPng(svgBell, 64, 64, '#3C3C3C'),
+		    svgToPng(svgSnowflake, 64, 64, '#3C3C3C'),
+		    svgToPng(svgAlert, 64, 64, '#D60000'), // Keep red
+		    svgToPng(svgCheck, 64, 64, '#1C6F2A'),
+		    svgToPng(svgMapPin, 64, 64, '#003580'),
+		    svgToPng(svgPhone, 64, 64, '#003580')
 		]);
 		
 		   // --- QR DATA ENGINE GENERATION ---
@@ -1047,8 +1047,8 @@
 		  const qrCanvas = qrDiv.querySelector("canvas");
 		  const qrImageBase64 = qrCanvas ? qrCanvas.toDataURL("image/png") : null;
 		
-		    const marginX = 15;
-		    let currentY = 15;
+		    const marginX = 20;
+		    let currentY = 20;
 		
 		    // ==========================================
 		    // 1. TOP HEADER SECTION (MODERN LOOK)
@@ -1105,9 +1105,9 @@
 		
 		    doc.setTextColor(accentGold[0], accentGold[1], accentGold[2]);
 		    doc.setFontSize(12);
-		    // Draw 5 gold stars horizontally
+		    // Draw gold stars horizontally
 		    for (let i = 0; i < 5; i++) {
-		       doc.addImage(goldStar, 'PNG', marginX + (i * 14), currentY + 7, 4,4);
+		       doc.addImage(goldStar, 'PNG', x, y, 8, 8);
 		    }
 		    doc.setFont("helvetica", "normal");
 		    doc.setFontSize(9.5);
@@ -1127,7 +1127,7 @@
 		    doc.rect(mapBoxX, currentY, colWidth, 32, 'D');
 		
 		    if (qrImageBase64) {
-		        doc.addImage(qrImageBase64, "PNG", mapBoxX + (colWidth - 26) / 2, currentY + 3, 4,4);
+		        doc.addImage(qrImageBase64, "PNG", mapBoxX + (colWidth - 26) / 2, currentY + 3, 16, 16);
 		    }
 		
 		    currentY += 42;
@@ -1141,7 +1141,7 @@
 		    doc.line(marginX + 90, currentY, marginX + 90, currentY + 16);
 		
 		    // Left Block: Check-In Details
-		    if (clockIcon) doc.addImage(clockIcon, 'PNG', marginX + 4, currentY + 3, 4,4);
+		    if (clockIcon) doc.addImage(clockIcon, 'PNG', x, y, 8, 8);
 		    doc.setFont("helvetica", "normal");
 		    doc.setFontSize(9);
 		    doc.setTextColor(100, 100, 100);
@@ -1156,7 +1156,7 @@
 		    doc.text("from 14:00 PM", marginX + 55, currentY + 11);
 		
 		    // Right Block: Check-Out Details
-		    if (clockIcon) doc.addImage(clockIcon, 'PNG', marginX + 94, currentY + 3, 4,4);
+		    if (clockIcon) doc.addImage(clockIcon, 'PNG', x, y, 8, 8);
 		    doc.setFont("helvetica", "normal");
 		    doc.setFontSize(9);
 		    doc.setTextColor(100, 100, 100);
@@ -1187,7 +1187,7 @@
 		    doc.setFontSize(9.5);
 		    doc.setTextColor(255, 255, 255);
 		    
-		    if (userIcon) doc.addImage(userIcon, 'PNG', marginX + 4, currentY + 2, 4,4);
+		    if (userIcon) doc.addImage(userIcon, 'PNG', x, y, 8, 8);
 		    doc.text("Lead Guest Details", marginX + 10, currentY + 5.5);
 		    doc.text("Contact Information", marginX + 100, currentY + 5.5);
 		
@@ -1218,7 +1218,7 @@
 		    doc.rect(marginX, currentY, 180, 8, 'F');
 		    doc.rect(marginX, currentY, 180, 8, 'D');
 		    
-		    if (bedIcon) doc.addImage(bedIcon, 'PNG', marginX + 4, currentY + 2, 4,4);
+		    if (bedIcon) doc.addImage(bedIcon, 'PNG', x, y, 8, 8);
 		    doc.setFontSize(9);
 		    doc.setTextColor(50, 50, 50);
 		    doc.text("Room #", marginX + 10, currentY + 5.5);
@@ -1269,17 +1269,17 @@
 		    const col3 = marginX + 125;
 		
 		    // WiFi
-		    if (wifiIcon) doc.addImage(wifiIcon, 'PNG', col1, amenityY, 4, 4);
+		    if (wifiIcon) doc.addImage(wifiIcon, 'PNG', x, y, 8, 8);
 		    doc.setFont("helvetica", "normal");
 		    doc.setTextColor(60, 60, 60);
 		    doc.text("WiFi", col1 + 16, amenityY + 8);
 		
 		    // Restaurant
-		    if (restaurantIcon) doc.addImage(restaurantIcon, 'PNG', col2, amenityY, 4, 4);
+		    if (restaurantIcon) doc.addImage(restaurantIcon, 'PNG', x, y, 8, 8);
 		    doc.text("Restaurant", col2 + 16, amenityY + 8);
 		
 		    // Room Service
-		    if (bellIcon) doc.addImage(bellIcon, 'PNG', col3, amenityY, 4, 4);
+		    if (bellIcon) doc.addImage(bellIcon, 'PNG', x, y, 8, 8);
 		    doc.text("Room Service", col3 + 16, amenityY + 8);
 		
 		    // Air Conditioning
@@ -1305,7 +1305,7 @@
 			// === Box 1: Check-in Policy (Green) ===
 			doc.setFillColor(232, 245, 233); // Light Green BG
 			doc.roundedRect(marginX, boxY, boxW, boxH, 2, 2, 'F');
-			if (checkIcon) doc.addImage(checkIcon, 'PNG', marginX + 4, boxY + 4, 4, 4);
+			if (checkIcon) doc.addImage(checkIcon, 'PNG', x, y, 8, 8);
 			
 			doc.setFont("helvetica", "bold");
 			doc.setFontSize(7);
@@ -1320,7 +1320,7 @@
 			// === Box 2: Cancellation (Orange) ===
 			doc.setFillColor(255, 249, 225); // Light Orange BG
 			doc.roundedRect(marginX + boxW + gap, boxY, boxW, boxH, 2, 2, 'F');
-			if (clockIcon) doc.addImage(clockIcon, 'PNG', marginX + boxW + gap + 4, boxY + 4, 4, 4);
+			if (clockIcon) doc.addImage(clockIcon, 'PNG', x, y, 8, 8);
 			
 			doc.setFont("helvetica", "bold");
 			doc.setFontSize(7);
@@ -1336,7 +1336,7 @@
 			// === Box 3: Please Note (Red) ===
 			doc.setFillColor(253, 237, 237); // Light Red BG
 			doc.roundedRect(marginX + (boxW + gap) * 2, boxY, boxW, boxH, 2, 2, 'F');
-			if (alertIcon) doc.addImage(alertIcon, 'PNG', marginX + (boxW + gap) * 2 + 4, boxY + 4, 4, 4);
+			if (alertIcon) doc.addImage(alertIcon, 'PNG', x, y, 8, 8);
 			
 			doc.setFont("helvetica", "bold");
 			doc.setFontSize(7);
