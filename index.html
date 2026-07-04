@@ -1059,7 +1059,7 @@
 			
 			// Draw check icon before "Booking Confirmation"
 			if (checkHeaderIcon) {
-			    doc.addImage(checkHeaderIcon, 'PNG', headerX - 22, currentY, 20, 20); // 2cm x 2cm
+			    doc.addImage(checkHeaderIcon, 'PNG', headerX - 21, currentY - 1.25, 20, 20); // 2cm x 2cm
 			}
 			
 			doc.setFont("helvetica", "bold");
@@ -1078,15 +1078,32 @@
 		    doc.setTextColor(80, 80, 80);
 		    doc.text(`Booking Date: ${dateStr}`, rightAlignX, currentY + 4, { align: 'right' });
 		    
-		    doc.setFont("helvetica", "bold");
-		    doc.setTextColor(accentGold[0], accentGold[1], accentGold[2]);
-		    doc.text(`Booking ID: ${bookingID}`, rightAlignX, currentY + 10, { align: 'right' });
+			const refLabel = "Booking Ref #";
+			const refFullText = `${refLabel} ${bookingID}`;
+			
+			// 1. Calculate Dimensions for the Background Box
+			doc.setFont("helvetica", "bold");
+			doc.setFontSize(10);
+			const textWidth = doc.getTextWidth(refFullText);
+			const boxPadding = 8; // Total horizontal padding
+			const boxWidth = textWidth + boxPadding; 
+			const boxHeight = 8;
+			const boxY = currentY + 10; // Vertical Position
+			const boxX = rightAlignX - boxWidth; // Right Aligned
+			
+			// 2. Draw Background (Light Blue #f1f6fd)
+			doc.setFillColor(241, 246, 253); // Hex #f1f6fd converted to RGB
+			doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 2, 2, 'F');
+			
+			// 3. Draw Text (Blue #003580)
+			doc.setTextColor(primaryNavy[0], primaryNavy[1], primaryNavy[2]); // Blue
+			doc.text(refFullText, rightAlignX - 4, boxY + 5.5, { align: 'right' });
 		
-		    doc.setFillColor(accentGold[0], accentGold[1], accentGold[2]);
-		    doc.roundedRect(rightAlignX - 30, currentY + 14, 30, 6, 1, 1, 'F');
+		    doc.setFillColor(0, 59, 149); // Blue #003b95
+		    doc.roundedRect(rightAlignX - 30, currentY + 22, 30, 6, 1, 1, 'F');
 		    doc.setTextColor(255, 255, 255);
 		    doc.setFontSize(9);
-		    doc.text("CONFIRMED", rightAlignX - 15, currentY + 18.5, { align: 'center' });
+		    doc.text("CONFIRMED", rightAlignX - 15, currentY + 26.5, { align: 'center' });
 		
 		    currentY += 30;
 		    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
