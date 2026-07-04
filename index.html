@@ -1078,38 +1078,41 @@
 		    doc.setTextColor(80, 80, 80);
 		    doc.text(`Booking Date: ${dateStr}`, rightAlignX, currentY + 4, { align: 'right' });
 		    
+			// === Booking Ref # with Blue Background ===
 			const refLabel = "Booking Ref #";
 			const refFullText = `${refLabel} ${bookingID}`;
 			
-			// 1. Calculate Dimensions for the Background Box
+			// 1. Calculate Dimensions
 			doc.setFont("helvetica", "bold");
 			doc.setFontSize(10);
-			const textWidth = doc.getTextWidth(refFullText);
-			const boxPadding = 8; // Total horizontal padding
-			const boxWidth = textWidth + boxPadding; 
-			const boxHeight = 8;
-			const boxX = rightAlignX - boxWidth; // Right Aligned
+			const refTextWidth = doc.getTextWidth(refFullText);
+			const refBoxPadding = 8;
+			const refBoxWidth = refTextWidth + refBoxPadding;
+			const refBoxHeight = 8;
+			const refBoxY = currentY + 10;
+			const refBoxX = rightAlignX - refBoxWidth;
 			
 			// 2. Draw Background (Light Blue #f1f6fd)
 			doc.setFillColor(241, 246, 253); // Hex #f1f6fd converted to RGB
-			doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 2, 2, 'F');
+			doc.roundedRect(refBoxX, refBoxY, refBoxWidth, refBoxHeight, 2, 2, 'F');
 			
 			// 3. Draw Text (Blue #003580)
 			doc.setTextColor(primaryNavy[0], primaryNavy[1], primaryNavy[2]); // Blue
-			doc.text(refFullText, rightAlignX - 4, boxY + 5.5, { align: 'right' });
-		
-		    doc.setFillColor(0, 59, 149); // Blue #003b95
-		    doc.roundedRect(rightAlignX - 30, currentY + 22, 30, 6, 1, 1, 'F');
-		    doc.setTextColor(255, 255, 255);
-		    doc.setFontSize(9);
-		    doc.text("CONFIRMED", rightAlignX - 15, currentY + 26.5, { align: 'center' });
-		
-		    currentY += 30;
-		    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-		    doc.setLineWidth(0.5);
-		    doc.line(marginX, currentY, rightAlignX, currentY);
-		
-		    currentY += 8;
+			doc.text(refFullText, rightAlignX - 4, refBoxY + 5.5, { align: 'right' });
+			
+			// === CONFIRMED Badge (Blue #003b95) ===
+			doc.setFillColor(0, 59, 149); // Blue #003b95
+			doc.roundedRect(rightAlignX - 30, currentY + 22, 30, 6, 1, 1, 'F');
+			doc.setTextColor(255, 255, 255);
+			doc.setFontSize(9);
+			doc.text("CONFIRMED", rightAlignX - 15, currentY + 26.5, { align: 'center' });
+			
+			// === Update Y cursor and draw divider ===
+			currentY += 30;
+			doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+			doc.setLineWidth(0.5);
+			doc.line(marginX, currentY, rightAlignX, currentY);
+			currentY += 8;
 		
 		    // ==========================================
 		    // 2. THE STAY SECTION (TWO COLUMN GRID)
