@@ -937,6 +937,11 @@
 		    const guestPhone = document.getElementById('guestPhone').value.trim() || "";
 		    const checkinDate = document.getElementById('modalCheckIn').value || "";
 		    const checkoutDate = document.getElementById('modalCheckOut').value || "";
+// ✅ Cancel 48h before check-in at 23:59
+const cancelDeadline = checkinDate ? new Date(new Date(checkinDate).setHours(23, 59, 0, 0) - 48*60*60*1000) : null;
+const cancelDateFormatted = cancelDeadline ? 
+    `${cancelDeadline.getDate().toString().padStart(2,'0')}/${(cancelDeadline.getMonth()+1).toString().padStart(2,'0')}/${cancelDeadline.getFullYear()} ${cancelDeadline.getHours().toString().padStart(2,'0')}:${cancelDeadline.getMinutes().toString().padStart(2,'0')}` 
+    : "48 hours before check-in";
 		    const nightsText = document.getElementById('modalNights').value || "1 Night";
 		    
 		    const hotel = currentHotel || {};
@@ -1160,7 +1165,7 @@
 			doc.setTextColor(primaryNavy[0], primaryNavy[1], primaryNavy[2]);
 			// Draw Phone Icon (Blue #003580) followed by the number
 			const phoneIconSize = 5; // Small size to match text height
-			const phoneIconY = addressY + addressHeight + 2;
+			const phoneIconY = addressY + addressHeight + 1.5;
 			
 			if (phoneIcon) {
 			    doc.addImage(phoneIcon, 'PNG', marginX, phoneIconY, phoneIconSize, phoneIconSize);
@@ -1213,7 +1218,7 @@
 			doc.line(marginX + 90, currentY, marginX + 90, currentY + 16);
 			
 			const iconSize = 4.5; // ✅ Smaller size as requested
-			const iconY = currentY + 3; // Centered vertically in the 16mm high box
+			const iconY = currentY + 2; // Centered vertically in the 16mm high box
 			
 			// --- Left Block: Check-In Details ---
 			if (clockIcon) {
@@ -1232,7 +1237,7 @@
 			doc.setFont("helvetica", "normal");
 			doc.setFontSize(9);
 			doc.setTextColor(120, 120, 120);
-			doc.text("from 14:00 PM", marginX + 55, currentY + 11);
+			doc.text("from 14:00", marginX + 55, currentY + 11);
 			
 			// --- Right Block: Check-Out Details ---
 			if (clockIcon) {
@@ -1252,7 +1257,7 @@
 			doc.setFont("helvetica", "normal");
 			doc.setFontSize(9);
 			doc.setTextColor(120, 120, 120);
-			doc.text(`until 12:00 PM (${nightsText})`, marginX + 142, currentY + 11);
+			doc.text(`until 12:00 (${nightsText})`, marginX + 142, currentY + 11);
 			
 			currentY += 24;
 		
@@ -1455,7 +1460,7 @@
 			doc.setFont("helvetica", "normal");
 			doc.setFontSize(7);
 			doc.setTextColor(180, 120, 0);
-			const cancelText = "Free cancellation before: before 48 hours of check-in";
+			const cancelText = `Free cancellation before: ${cancelDateFormatted}`;
 			const wrappedCancel = doc.splitTextToSize(cancelText, boxW - textStartX - 2);
 			doc.text(wrappedCancel, box2X + textStartX, bodyY);
 			
