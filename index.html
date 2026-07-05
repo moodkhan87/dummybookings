@@ -1408,9 +1408,9 @@
 			const boxW = 58;       // Width of each box
 			const boxH = 28;       // Height increased to fit wrapped text
 			const gap = 5;         // Gap between boxes
-			const iconSize = 4.5;  // Reduced icon size
+			const policyIconSize = 4.5;  // Reduced icon size
 			const iconMargin = 4;  // Margin from left edge of box
-			const textStartX = iconMargin + iconSize + 2; // X position for text (after icon)
+			const textStartX = iconMargin + policyIconSize + 2; // X position for text (after icon)
 			const titleY = currentY + 7;   // Y position for Title
 			const bodyY = currentY + 11;   // Y position for Body Text
 			
@@ -1420,7 +1420,7 @@
 			doc.roundedRect(box1X, currentY, boxW, boxH, 2, 2, 'F');
 			
 			// Icon: checkIcon in #1c6f2a
-			if (checkIcon) doc.addImage(checkIcon, 'PNG', box1X + iconMargin, currentY + 3, iconSize, iconSize);
+			if (checkIcon) doc.addImage(checkIcon, 'PNG', box1X + iconMargin, currentY + 3, policyIconSize, policyIconSize);
 			
 			// Title
 			doc.setFont("helvetica", "bold");
@@ -1443,7 +1443,7 @@
 			doc.roundedRect(box2X, currentY, boxW, boxH, 2, 2, 'F');
 			
 			// Icon: orangeClockIcon (Your new SVG)
-			if (orangeClockIcon) doc.addImage(orangeClockIcon, 'PNG', box2X + iconMargin, currentY + 3, iconSize, iconSize);
+			if (orangeClockIcon) doc.addImage(orangeClockIcon, 'PNG', box2X + iconMargin, currentY + 3, policyIconSize, policyIconSize);
 			
 			// Title
 			doc.setFont("helvetica", "bold");
@@ -1466,7 +1466,7 @@
 			doc.roundedRect(box3X, currentY, boxW, boxH, 2, 2, 'F');
 			
 			// Icon: alertIcon
-			if (alertIcon) doc.addImage(alertIcon, 'PNG', box3X + iconMargin, currentY + 3, iconSize, iconSize);
+			if (alertIcon) doc.addImage(alertIcon, 'PNG', box3X + iconMargin, currentY + 3, policyIconSize, policyIconSize);
 			
 			// Title
 			doc.setFont("helvetica", "bold");
