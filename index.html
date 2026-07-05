@@ -1160,7 +1160,7 @@
 			doc.setTextColor(primaryNavy[0], primaryNavy[1], primaryNavy[2]);
 			// Draw Phone Icon (Blue #003580) followed by the number
 			const phoneIconSize = 5; // Small size to match text height
-			const phoneIconY = addressY + addressHeight + 4;
+			const phoneIconY = addressY + addressHeight + 2;
 			
 			if (phoneIcon) {
 			    doc.addImage(phoneIcon, 'PNG', marginX, phoneIconY, phoneIconSize, phoneIconSize);
@@ -1213,7 +1213,7 @@
 			doc.line(marginX + 90, currentY, marginX + 90, currentY + 16);
 			
 			const iconSize = 4.5; // ✅ Smaller size as requested
-			const iconY = currentY + 5.5; // Centered vertically in the 16mm high box
+			const iconY = currentY + 3; // Centered vertically in the 16mm high box
 			
 			// --- Left Block: Check-In Details ---
 			if (clockIcon) {
@@ -1424,13 +1424,13 @@
 			
 			// Title
 			doc.setFont("helvetica", "bold");
-			doc.setFontSize(7);
+			doc.setFontSize(8.5);
 			doc.setTextColor(28, 111, 42); // Dark Green
 			doc.text("Check-in Policy", box1X + textStartX, titleY);
 			
 			// Body Text (Wrapped)
 			doc.setFont("helvetica", "normal");
-			doc.setFontSize(6);
+			doc.setFontSize(7);
 			doc.setTextColor(40, 80, 40);
 			const policyText = "Present this voucher and valid photoidentification at check-in. Reservations are guaranteed; rooming assignments may be confirmed upon arrival.";
 			const wrappedPolicy = doc.splitTextToSize(policyText, boxW - textStartX - 2);
@@ -1447,13 +1447,13 @@
 			
 			// Title
 			doc.setFont("helvetica", "bold");
-			doc.setFontSize(7);
+			doc.setFontSize(8.5);
 			doc.setTextColor(230, 143, 0); // Dark Orange
 			doc.text("Cancellation", box2X + textStartX, titleY);
 			
 			// Body Text (Wrapped)
 			doc.setFont("helvetica", "normal");
-			doc.setFontSize(6);
+			doc.setFontSize(7);
 			doc.setTextColor(180, 120, 0);
 			const cancelText = "Free cancellation before: before 48 hours of check-in";
 			const wrappedCancel = doc.splitTextToSize(cancelText, boxW - textStartX - 2);
@@ -1470,13 +1470,13 @@
 			
 			// Title
 			doc.setFont("helvetica", "bold");
-			doc.setFontSize(7);
+			doc.setFontSize(8.5);
 			doc.setTextColor(198, 40, 40); // Dark Red
 			doc.text("Please Note", box3X + textStartX, titleY);
 			
 			// Body Text (Wrapped)
 			doc.setFont("helvetica", "normal");
-			doc.setFontSize(6);
+			doc.setFontSize(7);
 			doc.setTextColor(150, 40, 40);
 			const noteText = "Modifications are subject to availability and may incur additional charges. Contact the property directly for assistance.";
 			const wrappedNote = doc.splitTextToSize(noteText, boxW - textStartX - 2);
