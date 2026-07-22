@@ -247,6 +247,7 @@
 				        <option value="standard_twin">1 Standard Twin Beds</option>
 				        <option value="standard_triple">1 Standard Triple Beds</option>
 				        <option value="bed_mixed_dormitory_room">2 Bunk Beds</option>
+						<option value="standard_double_extra">Standard Double Room + Extra Bed</option>
 				    `;
 				    
 				    let html = '';
@@ -686,7 +687,8 @@
 		        standard_double: { name: "1 Standard Double Room", desc: "1 Double Bed", amen: "TV, AC, Wi-Fi, Towels, Toiletries" },
 		        standard_twin: { name: "1 Standard Twin Room", desc: "2 Single Beds", amen: "TV, AC, Wi-Fi, Towels, Toiletries" },
 		        standard_triple: { name: "1 Standard Triple Room", desc: "3 Beds", amen: "TV, AC, Wi-Fi, Towels, Toiletries" },
-		        bed_mixed_dormitory_room: { name: "2 Bunk Beds", desc: "Dormitory Style", amen: "Shared Bathroom" }
+		        bed_mixed_dormitory_room: { name: "2 Bunk Beds", desc: "Dormitory Style", amen: "Shared Bathroom" },
+				standard_double_extra: { name: "1 Standard Double + Extra Bed", desc: "1 Double Bed + 1 Extra Bed", amen: "TV, AC, Wi-Fi, Towels, Toiletries" }
 		    };
 		
 		    const { jsPDF } = window.jspdf;
@@ -968,7 +970,8 @@ const cancelDateFormatted = cancelDeadline ?
 		        standard_double: { name: "Standard Double Room", desc: "1 Double Bed", amen: "TV, AC, Wi-Fi, Towels" },
 		        standard_twin: { name: "Standard Twin Room", desc: "2 Single Beds", amen: "TV, AC, Wi-Fi, Towels" },
 		        standard_triple: { name: "Standard Triple Room", desc: "3 Beds", amen: "TV, AC, Wi-Fi, Towels" },
-		        bed_mixed_dormitory_room: { name: "Bunk Bed Room", desc: "Dormitory Style", amen: "Shared Bathroom" }
+		        bed_mixed_dormitory_room: { name: "Bunk Bed Room", desc: "Dormitory Style", amen: "Shared Bathroom" },
+				standard_double_extra: { name: "Standard Double + Extra Bed", desc: "1 Double Bed + 1 Extra Bed", amen: "TV, AC, Wi-Fi, Towels" }
 		    };
 		
 		    for (let i = 0; i < roomSelects.length; i++) {
